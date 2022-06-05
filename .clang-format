@@ -1,0 +1,4 @@
+BasedOnStyle: GNU
+SpaceBeforeParens: ControlStatements
+AlwaysBreakTemplateDeclarations: Yes
+PointerAlignment: Left
