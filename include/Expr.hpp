@@ -2,14 +2,6 @@
 
 #include <memory>
 
-namespace eval
-{
-class ExprVisitor;
-}
-
-namespace ast
-{
-
 /*
  * Expr := AddExpr | SubExpr | MultExpr | DivExpr | Number | '(' Expr ')'
  * AddExpr := Expr '+' Expr
@@ -19,13 +11,22 @@ namespace ast
  * Number := (0 | 1 | 2 | 3 | ... | 9)+
  */
 
+namespace mmt
+{
+
+// Forward declarations
+class ExprVisitor;
+
+namespace ast
+{
+
 // Expr
 class Expr
 {
 public:
   virtual ~Expr() noexcept{};
 
-  virtual void Accept(eval::ExprVisitor&) = 0;
+  virtual void Accept(ExprVisitor&) = 0;
 };
 
 /**
@@ -42,7 +43,7 @@ public:
     return value_;
   }
 
-  void Accept(eval::ExprVisitor&) override;
+  void Accept(ExprVisitor&) override;
 
 private:
   int value_ = 0;
@@ -58,6 +59,21 @@ public:
     delete lhs_;
     delete rhs_;
   };
+
+  BinaryExpr(const BinaryExpr&) = delete;
+  BinaryExpr& operator=(const BinaryExpr&) = delete;
+
+  BinaryExpr(BinaryExpr&& be) : lhs_{ be.lhs_ }, rhs_{ be.rhs_ }
+  {
+    be.lhs_ = nullptr;
+    be.rhs_ = nullptr;
+  }
+
+  BinaryExpr&
+  operator=(BinaryExpr&& be)
+  {
+    return { be };
+  }
 
   virtual Expr*
   lhs()
@@ -82,7 +98,7 @@ class AddExpr final : public BinaryExpr
 public:
   AddExpr(Expr* lhs, Expr* rhs) : BinaryExpr{ lhs, rhs } {}
 
-  void Accept(eval::ExprVisitor&) override;
+  void Accept(ExprVisitor&) override;
 };
 
 // SubExpr x - y
@@ -91,7 +107,9 @@ class SubExpr final : public BinaryExpr
 public:
   SubExpr(Expr* lhs, Expr* rhs) : BinaryExpr{ lhs, rhs } {}
 
-  void Accept(eval::ExprVisitor&) override;
+  void Accept(ExprVisitor&) override;
 };
 
-};
+}
+
+}

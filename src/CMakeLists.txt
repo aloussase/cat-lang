@@ -1,4 +1,4 @@
-add_executable(maps
+add_executable(mmt
   main.cpp
   Expr.cpp
   MIPSTranspiler.cpp

@@ -4,11 +4,14 @@
 #include "Lexer.hpp"
 #include "MIPSTranspiler.hpp"
 
+using namespace mmt;
+using namespace mmt::ast;
+
 int
 main(int argc, char** argv)
 {
   auto source{ "(1+2)-3" };
-  mmt::Lexer lexer{ source };
+  Lexer lexer{ source };
 
   auto tokens{ lexer.Lex() };
 
@@ -18,11 +21,10 @@ main(int argc, char** argv)
     }
 
   // (1+2)-3
-  auto expr{ ast::SubExpr{
-      new ast::AddExpr{ new ast::Number(1), new ast::Number(2) },
-      new ast::Number(3) } };
+  auto expr{ SubExpr{ new AddExpr{ new Number(1), new Number(2) },
+                      new Number(3) } };
 
-  eval::MIPSTranspiler transpiler{ expr };
+  MIPSTranspiler transpiler{ expr };
 
   auto result = transpiler.transpile();
 

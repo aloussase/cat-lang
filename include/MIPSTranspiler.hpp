@@ -5,7 +5,7 @@
 
 #include <string>
 
-namespace eval
+namespace mmt
 {
 
 class MIPSTranspiler final : public ExprVisitor

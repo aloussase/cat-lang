@@ -1,6 +1,6 @@
 #include "MIPSTranspiler.hpp"
 
-namespace eval
+namespace mmt
 {
 
 std::string

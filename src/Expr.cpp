@@ -1,7 +1,8 @@
 #include "Expr.hpp"
 #include "ExprVisitor.hpp"
 
-using namespace eval;
+namespace mmt
+{
 
 namespace ast
 {
@@ -25,3 +26,5 @@ SubExpr::Accept(ExprVisitor& visitor)
 }
 
 } // namespace ast
+
+}
