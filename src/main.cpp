@@ -30,7 +30,10 @@ main(int argc, char** argv)
   argv++;
 
   if (argc == 0)
-    repl();
+    {
+      repl();
+      return 0;
+    }
 
   int i{ 0 };
   for (; i < argc; i++)
