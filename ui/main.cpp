@@ -29,7 +29,7 @@ transpile_input()
       start = current;
       while (current < result.length() && result[current] != '\n')
         current++;
-      transpiled.push_back(result.substr(start, current - start - 1));
+      transpiled.push_back(result.substr(start, current - start));
       current++; // Skip the newline
       rounds++;
     }
@@ -63,8 +63,8 @@ loop()
   int height, width;
   getmaxyx(stdscr, height, width);
 
-  iw = newwin(height-1, width / 2, 0, 0);
-  ow = newwin(height-1, width / 2, 0, width / 2);
+  iw = newwin(height - 1, width / 2, 0, 0);
+  ow = newwin(height - 1, width / 2, 0, width / 2);
 
   bool keep_running{ true };
 
