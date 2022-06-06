@@ -1,33 +1,66 @@
+#include <cstdio>
+#include <cstring>
 #include <iostream>
 
-#include "Expr.hpp"
-#include "Lexer.hpp"
-#include "MIPSTranspiler.hpp"
+#include "mmt.hpp"
 
-using namespace mmt;
-using namespace mmt::ast;
+void
+repl()
+{
+  std::string line;
+
+  std::cout << "Welcome to MMT (Math to MIPS Transpiler) v0.0.1\n";
+  std::cout << "Press C-d to exit\n\n";
+
+  std::cout << "> ";
+  while (std::cin >> line)
+    {
+      std::cout << mmt::transpile(line) << "\n";
+      std::cout << "> ";
+    }
+}
+
+static FILE* fin = stdin;
+static FILE* fout = stdout;
 
 int
 main(int argc, char** argv)
 {
-  auto source{ "(1+2)-3" };
-  Lexer lexer{ source };
+  argc--;
+  argv++;
 
-  auto tokens{ lexer.Lex() };
+  if (argc == 0)
+    repl();
 
-  for (auto token : tokens)
+  int i{ 0 };
+  for (; i < argc; i++)
     {
-      std::cout << token << "\n";
+      if (!std::strcmp(*argv, "-o"))
+        {
+          fout = fopen(*++argv, "w");
+        }
+      else if (!std::strcmp(*argv, "-"))
+        {
+          fin = stdin;
+        }
+      else
+        {
+          break;
+        }
     }
 
-  // (1+2)-3*2
-  auto expr{ AddExpr{ new MultExpr{ new Number(3), new Number(2) }, new Number(2) } };
+  auto nargs{ argc - i };
+  if (nargs > 0)
+    {
+      fin = std::fopen(*argv, "r");
+    }
 
-  MIPSTranspiler transpiler{ expr };
+  char line[100];
+  std::fgets(line, 100, fin);
+  std::fputs(mmt::transpile(line).c_str(), fout);
 
-  auto result = transpiler.transpile();
-
-  std::cout << result << "\n";
+  fclose(fout);
+  fclose(fin);
 
   return 0;
 }

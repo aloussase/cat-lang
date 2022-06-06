@@ -3,4 +3,6 @@ add_executable(mmt
   Expr.cpp
   MIPSTranspiler.cpp
   Lexer.cpp
+  Parser.cpp
+  mmt.cpp
 )

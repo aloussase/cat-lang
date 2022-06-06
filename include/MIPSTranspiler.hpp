@@ -25,9 +25,11 @@ public:
 class MIPSTranspiler final : public ExprVisitor
 {
 public:
-  MIPSTranspiler(ast::Expr& expr) : expr_{ expr } {}
+  MIPSTranspiler(ast::Expr* expr) : expr_{ expr } {}
 
-  std::string transpile();
+  ~MIPSTranspiler() { delete expr_; }
+
+  std::string Transpile();
 
   void VisitNumberExpr(ast::Number&) override;
   void VisitAddExpr(ast::AddExpr&) override;
@@ -74,7 +76,7 @@ private:
     last_register_ = reg;
   }
 
-  ast::Expr& expr_;
+  ast::Expr* expr_;
   std::string result_ = "";
   Register<> last_register_ = Register<>{ 0 };
   std::bitset<8> registers_ = 0b0000'0000;

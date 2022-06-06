@@ -26,6 +26,9 @@ Lexer::Lex()
         case '-':
           tokens_.emplace_back(TokenType::MINUS, "-");
           break;
+        case '*':
+          tokens_.emplace_back(TokenType::STAR, "*");
+          break;
         case '(':
           tokens_.emplace_back(TokenType::LPAREN, "(");
           break;
@@ -43,6 +46,9 @@ Lexer::Lex()
         case '8':
         case '9':
           tokens_.push_back(Number(c));
+          break;
+        case ' ':
+        case '\n':
           break;
         default:
           std::cerr << "Invalid token on input: " << c << "\n";
@@ -68,8 +74,8 @@ Lexer::Advance() noexcept
 bool
 IsDigit(char c)
 {
-  return c == '0' || c == '1' || c == '2' || c == '3' || c == '4' || c == '5'
-         || c == '6' || c == '7' || c == '8' || c == '9';
+  return c == '0' || c == '1' || c == '2' || c == '3' || c == '4' || c == '5' || c == '6'
+         || c == '7' || c == '8' || c == '9';
 }
 
 char

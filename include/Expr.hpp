@@ -3,11 +3,10 @@
 #include <memory>
 
 /*
- * Expr := AddExpr | SubExpr | MultExpr | DivExpr | Number | '(' Expr ')'
+ * Expr := AddExpr | SubExpr | MultExpr | Number | '(' Expr ')'
  * AddExpr := Expr '+' Expr
  * SubExpr := Expr '-' Expr
  * MultExpr := Expr '*' Expr
- * DivExpr := Expr '/' Expr
  * Number := (0 | 1 | 2 | 3 | ... | 9)+
  */
 

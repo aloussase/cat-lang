@@ -4,12 +4,12 @@ namespace mmt
 {
 
 std::string
-MIPSTranspiler::transpile()
+MIPSTranspiler::Transpile()
 {
   result_ += ".globl main\n";
   result_ += "main:\n";
 
-  expr_.Accept(*this);
+  expr_->Accept(*this);
 
   result_ += "jr $ra\n";
   return result_;
@@ -19,7 +19,7 @@ void
 MIPSTranspiler::VisitNumberExpr(ast::Number& expr)
 {
   auto r{ find_register() };
-  result_ += "li " + ntor(r) + "," + std::to_string(expr.value()) + " # Number \n";
+  result_ += "li " + ntor(r) + "," + std::to_string(expr.value()) + " # Number\n";
   return_register(r);
 }
 

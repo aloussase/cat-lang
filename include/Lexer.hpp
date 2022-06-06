@@ -10,6 +10,7 @@ enum class TokenType
   NUMBER,
   PLUS,
   MINUS,
+  STAR,
   LPAREN,
   RPAREN
 };
@@ -17,15 +18,18 @@ enum class TokenType
 class Token
 {
 public:
-  Token(TokenType type, const std::string& lexeme)
-      : type_{ type }, lexeme_{ lexeme }
-  {
-  }
+  Token(TokenType type, const std::string& lexeme) : type_{ type }, lexeme_{ lexeme } {}
 
-  std::string
-  lexeme()
+  [[nodiscard]] std::string
+  lexeme() const noexcept
   {
     return lexeme_;
+  }
+
+  [[nodiscard]] TokenType
+  type() const noexcept
+  {
+    return type_;
   }
 
 private:
