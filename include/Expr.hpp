@@ -110,6 +110,15 @@ public:
   void Accept(ExprVisitor&) override;
 };
 
+// MultExpr x * y
+class MultExpr final : public BinaryExpr
+{
+public:
+  MultExpr(Expr* lhs, Expr* rhs) : BinaryExpr{ lhs, rhs } {}
+
+  void Accept(ExprVisitor&) override;
+};
+
 }
 
 }

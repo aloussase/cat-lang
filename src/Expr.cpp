@@ -25,6 +25,12 @@ SubExpr::Accept(ExprVisitor& visitor)
   visitor.VisitSubExpr(*this);
 }
 
+void
+MultExpr::Accept(ExprVisitor& visitor)
+{
+  visitor.VisitMultExpr(*this);
+}
+
 } // namespace ast
 
 }

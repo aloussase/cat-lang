@@ -20,9 +20,8 @@ main(int argc, char** argv)
       std::cout << token << "\n";
     }
 
-  // (1+2)-3
-  auto expr{ SubExpr{ new AddExpr{ new Number(1), new Number(2) },
-                      new Number(3) } };
+  // (1+2)-3*2
+  auto expr{ AddExpr{ new MultExpr{ new Number(3), new Number(2) }, new Number(2) } };
 
   MIPSTranspiler transpiler{ expr };
 

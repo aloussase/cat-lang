@@ -18,29 +18,62 @@ MIPSTranspiler::transpile()
 void
 MIPSTranspiler::VisitNumberExpr(ast::Number& expr)
 {
-  result_ += "li $t0, " + std::to_string(expr.value()) + "\n";
+  auto r{ find_register() };
+  result_ += "li " + ntor(r) + "," + std::to_string(expr.value()) + " # Number \n";
+  return_register(r);
 }
 
 void
 MIPSTranspiler::VisitAddExpr(ast::AddExpr& expr)
 {
+  auto r1{ find_register() };
   expr.lhs()->Accept(*this);
-  result_ += "move $t1, $t0\n";
+  result_ += "move " + ntor(r1) + "," + ntor(last_register_) + " # AddExpr\n";
+  release_last();
 
-  // The result should be in $t0.
+  auto r2{ find_register() };
   expr.rhs()->Accept(*this);
-  result_ += "add $t0, $t0, $t1\n";
+  result_ += "add " + ntor(r2) + "," + ntor(r1) + "," + ntor(last_register_) + " # AddExpr\n";
+  release_last();
+
+  release_register(r1);
+  return_register(r2);
 }
 
 void
 MIPSTranspiler::VisitSubExpr(ast::SubExpr& expr)
 {
+  auto r1{ find_register() };
   expr.lhs()->Accept(*this);
-  result_ += "move $t1, $t0\n";
+  result_ += "move " + ntor(r1) + "," + ntor(last_register_) + " # SubExpr\n";
+  release_last();
 
-  // The result should be in $t0.
+  auto r2{ find_register() };
   expr.rhs()->Accept(*this);
-  result_ += "sub $t0, $t0, $t1\n";
+  result_ += "sub " + ntor(r2) + "," + ntor(r1) + "," + ntor(last_register_) + " # SubExpr\n";
+  release_last();
+
+  release_register(r1);
+  return_register(r2);
+}
+
+void
+MIPSTranspiler::VisitMultExpr(ast::MultExpr& expr)
+{
+  auto r1{ find_register() };
+  expr.lhs()->Accept(*this);
+  result_ += "move " + ntor(r1) + "," + ntor(last_register_) + " # MultExpr\n";
+  release_last();
+
+  expr.rhs()->Accept(*this);
+  result_ += "mult " + ntor(r1) + "," + ntor(last_register_) + " # MultExpr\n";
+  release_last();
+
+  auto r2{ find_register() };
+  result_ += "mflo " + ntor(r2) + " # MultExpr\n";
+
+  release_register(r1);
+  return_register(r2);
 }
 
 }
