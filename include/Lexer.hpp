@@ -55,6 +55,7 @@ private:
   std::vector<Token> tokens_;
   std::string source_;
   int current_ = 0;
+  int line_ = 0;
 };
 
 }

@@ -48,10 +48,13 @@ Lexer::Lex()
           tokens_.push_back(Number(c));
           break;
         case ' ':
+        case '\t':
+          break;
         case '\n':
+          line_++;
           break;
         default:
-          std::cerr << "Invalid token on input: " << c << "\n";
+          std::cerr << line_ << ": Invalid token on input: " << c << "\n";
           return {};
         }
     }
