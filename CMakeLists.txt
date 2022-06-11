@@ -1,12 +1,12 @@
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 3.3)
+cmake_policy(VERSION 3.3)
 
 project(mmt CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_subdirectory(src)
-add_subdirectory(ui)
+include_directories(include)
 
-target_include_directories(mmt PRIVATE include)
-target_include_directories(mmt-exe PRIVATE include)
-target_include_directories(mmt-tui PRIVATE include)
+add_subdirectory(src)
+add_subdirectory(tui)
+add_subdirectory(web)

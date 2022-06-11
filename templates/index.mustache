@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Math to MIPS Transpiler</title>
+    <link rel="stylesheet" href="./style.css">
+    <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  </head>
+  <body>
+    <main>
+      <h1>Math to MIPS Transpiler</h1>
+      <form method="post" action="/">
+        <textarea name="data" rows="10" cols="50"></textarea>
+        <input type="submit" value="Run" />
+      </form>
+      {{#did-transpile}}
+        <div id="transpilation-result">
+          <h2>Results:</h2>
+          <p>
+            {{transpilation-result}}
+          </p>
+        </div>
+      {{/did-transpile}}
+    </main>
+  </body>
+</html>
