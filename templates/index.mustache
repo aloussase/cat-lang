@@ -5,24 +5,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Math to MIPS Transpiler</title>
-    <link rel="stylesheet" href="./style.css">
+    <link rel="stylesheet" href="static/index.css">
     <link rel="icon" href="./favicon.ico" type="image/x-icon">
   </head>
   <body>
     <main>
+      <!-- Fork me on GitHub thingy -->
+      <div class="github-ribbon" style="position: absolute; width:
+      150px; height: 150px; overflow: hidden; z-index: 99999; right:
+      0px; top: 0px;"><a target="_blank" style="display: inline-block;
+      width: 200px; overflow: hidden; padding: 6px 0px; text-align:
+      center; transform: rotate(45deg); text-decoration: none; color:
+      rgb(255, 255, 255); position: inherit; font: 700 13px
+      &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif;
+      box-shadow: rgba(0, 0, 0, 0.5) 0px 2px 3px 0px;
+      background-color: rgb(170, 0, 0); right: -40px; top: 45px;
+      background-image: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0,
+      0, 0.15));" href="https://github.com/aloussase/mmt.git">Fork me
+      on GitHub</a></div>
+      <!-- Transpilation input -->
       <h1>Math to MIPS Transpiler</h1>
-      <form method="post" action="/">
-        <textarea name="data" rows="10" cols="50"></textarea>
+      <form id="transpilation-form" method="post" action="/">
+        <textarea placeholder="1 + 2" name="data" rows="15" cols="100" autofocus></textarea>
         <input type="submit" value="Run" />
       </form>
+      <!-- Transpilation output -->
       {{#did-transpile}}
         <div id="transpilation-result">
-          <h2>Results:</h2>
-          <p>
+          <pre>
             {{transpilation-result}}
-          </p>
+          </pre>
         </div>
       {{/did-transpile}}
     </main>
+    <!-- Footer -->
+    <footer>
+      <small>&#169; Alexander Goussas 2022</small>
+    </footer>
   </body>
 </html>
