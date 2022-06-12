@@ -1,3 +1,5 @@
+#include <cstdlib>
+
 #include "crow_all.h"
 
 #include "mmt.hpp"
@@ -36,7 +38,11 @@ main()
     return page.render({ { "error", "Transpilation failed, please enter a valid expression" } });
   });
 
-  app.port(8080).multithreaded().run();
+  std::string port{ "8080" };
+  if (auto e_port{ std::getenv("PORT") }; e_port)
+    port = e_port;
+
+  app.port(std::stoi(port)).multithreaded().run();
 
   return 0;
 }
