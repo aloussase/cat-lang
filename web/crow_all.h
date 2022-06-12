@@ -3971,10 +3971,13 @@ inline int qs_parse(char* qs, char* qs_kv[], int qs_kv_size, bool parse_url = tr
 
     // find the beginning of the k/v substrings or the fragment
     substr_ptr = parse_url ? qs + strcspn(qs, "?#") : qs;
-    if (substr_ptr[0] != '\0')
-        substr_ptr++;
-    else
-        return 0; // no query or fragment
+    if (parse_url)
+    {
+        if (substr_ptr[0] != '\0')
+            substr_ptr++;
+        else
+            return 0; // no query or fragment
+    }
 
     i=0;
     while(i<qs_kv_size)
@@ -6921,6 +6924,12 @@ namespace crow
                 std::string ret;
                 render_internal(0, fragments_.size() - 1, stack, ret, 0);
                 return rendered_template(ret);
+            }
+
+            /// Apply the values from the context provided and output a returnable template from this mustache template
+            rendered_template render(context&& ctx) const
+            {
+                return render(ctx);
             }
 
             /// Output a returnable template from this mustache template
