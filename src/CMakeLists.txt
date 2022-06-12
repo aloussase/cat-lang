@@ -6,7 +6,7 @@ add_library(mmt
   mmt.cpp
 )
 
-if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
   message(STATUS "Running in Debug mode")
   target_compile_definitions(mmt PRIVATE DEBUG)
 endif()
