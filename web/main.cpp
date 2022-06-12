@@ -1,4 +1,4 @@
-#include <crow.h>
+#include "crow_all.h"
 
 #include "mmt.hpp"
 
@@ -27,10 +27,22 @@ main()
     auto body{ req.get_body_params() };
     CROW_LOG_INFO << "Received payload:" << body;
 
-    if (auto data{ body.get("data") }; data)
-      return crow::response(mmt::transpile(data));
+    // FIXME: auto data{ body.get("data") };
+    // Waiting for this fix to be merged into master.
+    auto data{ body.get("ata") };
+    if (!data)
+      return crow::response(400);
 
-    return crow::response(400);
+    auto result{ mmt::transpile(data) };
+    if (result == "")
+      return crow::response(400);
+
+    crow::mustache::context ctx;
+    ctx["did-transpile"] = true;
+    ctx["transpilation-result"] = result;
+
+    auto page{ crow::mustache::load("index.mustache") };
+    return crow::response(page.render(ctx));
   });
 
   app.port(8080).multithreaded().run();
