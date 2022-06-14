@@ -59,6 +59,7 @@ MIPSTranspiler::emit(const std::string& s) noexcept
 std::string
 MIPSTranspiler::Transpile()
 {
+  emit(".text");
   emit(".globl main");
   emit("main:");
   expr_->Accept(*this);
