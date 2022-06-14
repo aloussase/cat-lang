@@ -1,117 +1,128 @@
 #include "MIPSTranspiler.hpp"
+#include "Expr.hpp"
+#include "ExprVisitor.hpp"
+#include "Instruction.hpp"
+
+#define AS_REGISTER(o) std::any_cast<register_t>(o)
+#define AS_NUMBER(o) static_cast<ast::Number*>(o)
+
+#define IS_NUMBER(o) ((o)->token().type() == TokenType::NUMBER)
 
 namespace mmt
 {
 
+MIPSTranspiler::~MIPSTranspiler() { delete expr_; }
+
+register_t
+MIPSTranspiler::find_register() noexcept
+{
+  assert(!registers_.all());
+
+  for (int register_number = register_t::min_value; register_number < register_t::max_value;
+       register_number++)
+    {
+      if (int pos = register_number - register_t::min_value; !registers_.test(pos))
+        {
+          registers_ |= 1 << pos; // Mark the register as being used
+          return { register_number };
+        }
+    }
+
+  return { -1 };
+}
+
+void
+MIPSTranspiler::release_register(register_t reg)
+{
+  registers_ &= ~(1 << reg);
+}
+
+void
+MIPSTranspiler::emit(const Instruction& instruction) noexcept
+{
+  emit(instruction.to_s());
+}
+
+void
+MIPSTranspiler::emit(const std::string& s) noexcept
+{
+  if (auto newline{ s.rfind('\n') }; newline != std::string::npos)
+    {
+      result_ += s;
+    }
+  else
+    {
+      result_ += s + "\n";
+    }
+}
+
 std::string
 MIPSTranspiler::Transpile()
 {
-  result_ += ".globl main\n";
-  result_ += "main:\n";
-
+  emit(".globl main");
+  emit("main:");
   expr_->Accept(*this);
-
-  result_ += "jr $ra\n";
+  emit("jr $ra");
   return result_;
 }
 
-void
+std::any
 MIPSTranspiler::VisitNumberExpr(ast::Number& expr)
 {
   auto r{ find_register() };
-  result_ += "li " + ntor(r) + "," + std::to_string(expr.value());
-
-#ifdef DEBUG
-  result_ += " # Number";
-#endif
-
-  result_ += "\n";
-  return_register(r);
+  emit<Instruction::LI>(r, expr.value());
+  return r;
 }
 
-void
+std::any
 MIPSTranspiler::VisitAddExpr(ast::AddExpr& expr)
 {
-  auto r1{ find_register() };
-  expr.lhs()->Accept(*this);
-  result_ += "move " + ntor(r1) + "," + ntor(last_register_);
-#ifdef DEBUG
-  result_ += " # AddExpr";
-#endif
-  result_ += "\n";
-  release_last();
+  register_t lhs{ AS_REGISTER(expr.lhs()->Accept(*this)) };
 
-  auto r2{ find_register() };
-  expr.rhs()->Accept(*this);
-  result_ += "add " + ntor(r2) + "," + ntor(r1) + "," + ntor(last_register_);
-#ifdef DEBUG
-  result_ += " # AddExpr";
-#endif
-  result_ += "\n";
-  release_last();
+  if (IS_NUMBER(expr.rhs()))
+    {
+      emit<Instruction::ADDI>(lhs, lhs, AS_NUMBER(expr.rhs())->value());
+    }
+  else
+    {
+      register_t rhs{ AS_REGISTER(expr.rhs()->Accept(*this)) };
+      emit<Instruction::ADD>(lhs, lhs, rhs);
+      release_register(rhs);
+    }
 
-  release_register(r1);
-  return_register(r2);
+  return lhs;
 }
 
-void
+std::any
 MIPSTranspiler::VisitSubExpr(ast::SubExpr& expr)
 {
-  auto r1{ find_register() };
-  expr.lhs()->Accept(*this);
-  result_ += "move " + ntor(r1) + "," + ntor(last_register_);
+  register_t lhs{ AS_REGISTER(expr.lhs()->Accept(*this)) };
 
-#ifdef DEBUG
-  result_ += " # SubExpr";
-#endif
+  if (IS_NUMBER(expr.rhs()))
+    {
+      emit<Instruction::ADDI>(lhs, lhs, -AS_NUMBER(expr.rhs())->value());
+    }
+  else
+    {
+      register_t rhs{ AS_REGISTER(expr.rhs()->Accept(*this)) };
+      emit<Instruction::SUB>(lhs, lhs, rhs);
+      release_register(rhs);
+    }
 
-  result_ += "\n";
-  release_last();
-
-  auto r2{ find_register() };
-  expr.rhs()->Accept(*this);
-  result_ += "sub " + ntor(r2) + "," + ntor(r1) + "," + ntor(last_register_);
-
-#ifdef DEBUG
-  result_ += " # SubExpr";
-#endif
-
-  result_ += "\n";
-  release_last();
-
-  release_register(r1);
-  return_register(r2);
+  return lhs;
 }
 
-void
+std::any
 MIPSTranspiler::VisitMultExpr(ast::MultExpr& expr)
 {
-  auto r1{ find_register() };
-  expr.lhs()->Accept(*this);
-  result_ += "move " + ntor(r1) + "," + ntor(last_register_);
-#ifdef DEBUG
-  result_ += " # MultExpr";
-#endif
-  result_ += "\n";
-  release_last();
+  register_t lhs{ AS_REGISTER(expr.lhs()->Accept(*this)) };
+  register_t rhs{ AS_REGISTER(expr.rhs()->Accept(*this)) };
 
-  expr.rhs()->Accept(*this);
-  result_ += "mult " + ntor(r1) + "," + ntor(last_register_);
-#ifdef DEBUG
-  result_ += " # MultExpr";
-#endif
-  result_ += "\n";
-  release_last();
+  emit<Instruction::MULT>(lhs, rhs);
+  emit<Instruction::MFLO>(lhs);
 
-  auto r2{ find_register() };
-  result_ += "mflo " + ntor(r2);
-#ifdef DEBUG
-  result_ += " # MultExpr";
-#endif
-  result_ += "\n";
-
-  release_register(r1);
-  return_register(r2);
+  release_register(rhs);
+  return lhs;
 }
 
 }

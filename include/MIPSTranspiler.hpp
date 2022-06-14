@@ -1,25 +1,129 @@
 #pragma once
 
+#include <any>
 #include <bitset>
 #include <cassert>
 #include <string>
 
-#include "Expr.hpp"
 #include "ExprVisitor.hpp"
 
 namespace mmt
 {
 
-template <int Min = 0, int Max = 8>
-class Register
+// Forward declarations
+class Instruction;
+namespace ast
+{
+class Expr;
+}
+
+class register_t
 {
 public:
-  int value = 0;
+  static const int min_value = 8;
+  static const int max_value = 25;
+  static const int size = max_value - min_value;
 
-  constexpr explicit Register(int N) : value{ N }
+  enum class name
   {
-    assert(N >= Min && N < Max && "Register number is not within bounds");
+    ZERO,
+    AT, // Reserved for assembler
+    V0,
+    V1,
+    A0,
+    A1,
+    A2,
+    A3,
+    T0,
+    T1,
+    T2,
+    T3,
+    T4,
+    T5,
+    T6,
+    T7,
+    S0,
+    S1,
+    S2,
+    S3,
+    S4,
+    S5,
+    S6,
+    S7,
+    T8,
+    T9,
+    K1, // Reserved for kernel
+    K2, // Reserved for kernel
+    GP, // Global pointer
+    SP, // Stack pointer
+    FP, // Frame pointer
+    RA  // Return address
+  };
+
+  constexpr
+  register_t() noexcept : register_t{ name::T0 }
+  {
   }
+
+  constexpr
+  register_t(name name) noexcept : name_{ name }
+  {
+  }
+
+  constexpr
+  register_t(int value) noexcept : name_{ static_cast<name>(value) }
+  {
+  }
+
+  [[nodiscard]] constexpr operator int() const noexcept { return static_cast<int>(name_); }
+
+  [[nodiscard]] operator std::string() const noexcept
+  {
+    switch (name_)
+      {
+      case name::T0:
+        return "$t0";
+      case name::T1:
+        return "$t1";
+      case name::T2:
+        return "$t2";
+      case name::T3:
+        return "$t3";
+      case name::T4:
+        return "$t4";
+      case name::T5:
+        return "$t5";
+      case name::T6:
+        return "$t6";
+      case name::T7:
+        return "$t7";
+      case name::S0:
+        return "$s0";
+      case name::S1:
+        return "$s1";
+      case name::S2:
+        return "$s2";
+      case name::S3:
+        return "$s3";
+      case name::S4:
+        return "$s4";
+      case name::S5:
+        return "$s5";
+      case name::S6:
+        return "$s6";
+      case name::S7:
+        return "$s7";
+      case name::T8:
+        return "$t8";
+      case name::T9:
+        return "$t9";
+      }
+
+    return "unhandled register to std::string conversion";
+  }
+
+private:
+  name name_;
 };
 
 class MIPSTranspiler final : public ExprVisitor
@@ -27,59 +131,32 @@ class MIPSTranspiler final : public ExprVisitor
 public:
   MIPSTranspiler(ast::Expr* expr) : expr_{ expr } {}
 
-  ~MIPSTranspiler() { delete expr_; }
+  ~MIPSTranspiler();
 
   std::string Transpile();
 
-  void VisitNumberExpr(ast::Number&) override;
-  void VisitAddExpr(ast::AddExpr&) override;
-  void VisitSubExpr(ast::SubExpr&) override;
-  void VisitMultExpr(ast::MultExpr&) override;
+  std::any VisitNumberExpr(ast::Number&) override;
+  std::any VisitAddExpr(ast::AddExpr&) override;
+  std::any VisitSubExpr(ast::SubExpr&) override;
+  std::any VisitMultExpr(ast::MultExpr&) override;
 
 private:
-  [[nodiscard]] std::string
-  ntor(Register<> reg) const noexcept
-  {
-    return "$t" + std::to_string(reg.value);
-  }
+  [[nodiscard]] register_t find_register() noexcept;
+  void release_register(register_t reg);
 
-  [[nodiscard]] Register<>
-  find_register() noexcept
-  {
-    assert(!registers_.all());
+  void emit(const std::string& s) noexcept;
+  void emit(const Instruction& instruction) noexcept;
 
-    for (int i = 0; i < 8; i++)
-      if (!registers_.test(i))
-        {
-          registers_ |= 1 << i;
-          return Register<>{ i };
-        }
-
-    return Register<>{ -1 };
-  }
-
+  template <typename Inst, typename... Args>
   void
-  release_register(Register<> reg)
+  emit(Args&&... args) noexcept
   {
-    registers_ &= ~(1 << reg.value);
-  }
-
-  void
-  release_last()
-  {
-    release_register(last_register_);
-  }
-
-  constexpr void
-  return_register(Register<> reg) noexcept
-  {
-    last_register_ = reg;
+    emit(Inst(args...));
   }
 
   ast::Expr* expr_;
-  std::string result_ = "";
-  Register<> last_register_ = Register<>{ 0 };
-  std::bitset<8> registers_ = 0b0000'0000;
+  std::string result_ = {};
+  std::bitset<register_t::size> registers_ = register_t::min_value;
 };
 
 }

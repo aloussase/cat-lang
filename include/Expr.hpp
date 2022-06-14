@@ -1,20 +1,12 @@
 #pragma once
 
-#include <memory>
+#include <any>
 
-/*
- * Expr := AddExpr | SubExpr | MultExpr | Number | '(' Expr ')'
- * AddExpr := Expr '+' Expr
- * SubExpr := Expr '-' Expr
- * MultExpr := Expr '*' Expr
- * Number := (0 | 1 | 2 | 3 | ... | 9)+
- */
+#include "ExprVisitor.hpp"
+#include "Lexer.hpp"
 
 namespace mmt
 {
-
-// Forward declarations
-class ExprVisitor;
 
 namespace ast
 {
@@ -23,9 +15,19 @@ namespace ast
 class Expr
 {
 public:
+  Expr(Token token) : token_(token) {}
   virtual ~Expr() noexcept{};
 
-  virtual void Accept(ExprVisitor&) = 0;
+  virtual std::any Accept(ExprVisitor&) = 0;
+
+  [[nodiscard]] virtual Token
+  token() const noexcept
+  {
+    return token_;
+  }
+
+protected:
+  Token token_;
 };
 
 /**
@@ -34,7 +36,7 @@ public:
 class Number final : public Expr
 {
 public:
-  Number(int value) : value_{ value } {}
+  Number(Token token, int value) : Expr{ token }, value_{ value } {}
 
   int
   value()
@@ -42,7 +44,7 @@ public:
     return value_;
   }
 
-  void Accept(ExprVisitor&) override;
+  std::any Accept(ExprVisitor&) override;
 
 private:
   int value_ = 0;
@@ -51,7 +53,7 @@ private:
 class BinaryExpr : public Expr
 {
 public:
-  BinaryExpr(Expr* lhs, Expr* rhs) : lhs_{ lhs }, rhs_{ rhs } {}
+  BinaryExpr(Token token, Expr* lhs, Expr* rhs) : Expr{ token }, lhs_{ lhs }, rhs_{ rhs } {}
 
   virtual ~BinaryExpr() noexcept
   {
@@ -62,7 +64,7 @@ public:
   BinaryExpr(const BinaryExpr&) = delete;
   BinaryExpr& operator=(const BinaryExpr&) = delete;
 
-  BinaryExpr(BinaryExpr&& be) : lhs_{ be.lhs_ }, rhs_{ be.rhs_ }
+  BinaryExpr(BinaryExpr&& be) : Expr{ be.token() }, lhs_{ be.lhs_ }, rhs_{ be.rhs_ }
   {
     be.lhs_ = nullptr;
     be.rhs_ = nullptr;
@@ -95,29 +97,28 @@ protected:
 class AddExpr final : public BinaryExpr
 {
 public:
-  AddExpr(Expr* lhs, Expr* rhs) : BinaryExpr{ lhs, rhs } {}
+  AddExpr(Token token, Expr* lhs, Expr* rhs) : BinaryExpr{ token, lhs, rhs } {}
 
-  void Accept(ExprVisitor&) override;
+  std::any Accept(ExprVisitor&) override;
 };
 
 // SubExpr x - y
 class SubExpr final : public BinaryExpr
 {
 public:
-  SubExpr(Expr* lhs, Expr* rhs) : BinaryExpr{ lhs, rhs } {}
+  SubExpr(Token token, Expr* lhs, Expr* rhs) : BinaryExpr{ token, lhs, rhs } {}
 
-  void Accept(ExprVisitor&) override;
+  std::any Accept(ExprVisitor&) override;
 };
 
 // MultExpr x * y
 class MultExpr final : public BinaryExpr
 {
 public:
-  MultExpr(Expr* lhs, Expr* rhs) : BinaryExpr{ lhs, rhs } {}
+  MultExpr(Token token, Expr* lhs, Expr* rhs) : BinaryExpr{ token, lhs, rhs } {}
 
-  void Accept(ExprVisitor&) override;
+  std::any Accept(ExprVisitor&) override;
 };
 
 }
-
 }

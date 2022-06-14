@@ -1,5 +1,4 @@
 #include "Expr.hpp"
-#include "ExprVisitor.hpp"
 
 namespace mmt
 {
@@ -7,28 +6,28 @@ namespace mmt
 namespace ast
 {
 
-void
+std::any
 Number::Accept(ExprVisitor& visitor)
 {
-  visitor.VisitNumberExpr(*this);
+  return visitor.VisitNumberExpr(*this);
 }
 
-void
+std::any
 AddExpr::Accept(ExprVisitor& visitor)
 {
-  visitor.VisitAddExpr(*this);
+  return visitor.VisitAddExpr(*this);
 }
 
-void
+std::any
 SubExpr::Accept(ExprVisitor& visitor)
 {
-  visitor.VisitSubExpr(*this);
+  return visitor.VisitSubExpr(*this);
 }
 
-void
+std::any
 MultExpr::Accept(ExprVisitor& visitor)
 {
-  visitor.VisitMultExpr(*this);
+  return visitor.VisitMultExpr(*this);
 }
 
 } // namespace ast

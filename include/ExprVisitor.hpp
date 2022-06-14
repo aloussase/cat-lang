@@ -1,5 +1,7 @@
 #pragma once
 
+#include <any>
+
 namespace mmt
 {
 
@@ -20,10 +22,10 @@ class ExprVisitor
 public:
   virtual ~ExprVisitor() noexcept{};
 
-  virtual void VisitNumberExpr(mmt::ast::Number&) = 0;
-  virtual void VisitAddExpr(mmt::ast::AddExpr&) = 0;
-  virtual void VisitSubExpr(mmt::ast::SubExpr&) = 0;
-  virtual void VisitMultExpr(mmt::ast::MultExpr&) = 0;
+  virtual std::any VisitNumberExpr(mmt::ast::Number&) = 0;
+  virtual std::any VisitAddExpr(mmt::ast::AddExpr&) = 0;
+  virtual std::any VisitSubExpr(mmt::ast::SubExpr&) = 0;
+  virtual std::any VisitMultExpr(mmt::ast::MultExpr&) = 0;
 };
 
 }

@@ -72,7 +72,7 @@ Parser::Parse(int precedence)
 Expr*
 parse_integer(Parser& parser, Token token)
 {
-  return new Number(std::stoi(token.lexeme()));
+  return new Number(token, std::stoi(token.lexeme()));
 }
 
 Expr*
@@ -83,19 +83,19 @@ parse_binary_operator(Parser& parser, Token token, Expr* left)
     case TokenType::PLUS:
       {
         auto right{ parser.Parse(parser.precedence_[TokenType::PLUS]) };
-        return new AddExpr{ left, right };
+        return new AddExpr{ token, left, right };
       }
       break;
     case TokenType::MINUS:
       {
         auto right{ parser.Parse(parser.precedence_[TokenType::MINUS]) };
-        return new SubExpr{ left, right };
+        return new SubExpr{ token, left, right };
       }
       break;
     case TokenType::STAR:
       {
         auto right{ parser.Parse(parser.precedence_[TokenType::STAR]) };
-        return new MultExpr{ left, right };
+        return new MultExpr{ token, left, right };
       }
       break;
     default:
