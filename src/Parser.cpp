@@ -7,7 +7,7 @@ namespace mmt
 {
 
 std::optional<Token>
-Parser::Advance() noexcept
+Parser::advance() noexcept
 {
   if (current_ < tokens_.size())
     return tokens_[current_++];
@@ -15,11 +15,21 @@ Parser::Advance() noexcept
 }
 
 std::optional<Token>
-Parser::Peek() const noexcept
+Parser::peek() const noexcept
 {
   if (current_ < tokens_.size())
     return tokens_[current_];
   return std::nullopt;
+}
+
+void
+Parser::consume(TokenType type)
+{
+  if (auto token{ advance() }; token->type() != type)
+    {
+      throw SyntaxError{ token->line(), "Unexpected token '" + token->type_as_str()
+                                            + "', expected '" + token_type_as_str(type) + "'" };
+    }
 }
 
 std::optional<Parser::PrefixParselet>
@@ -42,25 +52,66 @@ Parser::get_infix_parselet(TokenType type) noexcept
   return infix_parselets_[type];
 }
 
-Expr*
-Parser::Parse(int precedence)
+std::unique_ptr<Node>
+Parser::Parse()
 {
-  auto token{ Advance() };
+  std::unique_ptr<Program> program{ new Program };
+
+  auto token{ peek() };
+  while (token.has_value() && token->type() != TokenType::END)
+    {
+      auto stmt{ parse_stmt() };
+      if (stmt == nullptr)
+        {
+          return nullptr;
+        }
+      program->add_stmt(stmt);
+      token = peek();
+    }
+
+  consume(TokenType::END);
+  return program;
+};
+
+Stmt*
+Parser::parse_stmt()
+{
+  auto expr{ parse_expr(0) };
+  try
+    {
+      consume(TokenType::DOT);
+    }
+  catch (...)
+    {
+      delete expr;
+      throw;
+    }
+  return expr;
+}
+
+Expr*
+Parser::parse_expr(int precedence)
+{
+  auto token{ advance() };
   if (!token.has_value())
     return nullptr;
 
   auto prefix_parselet{ get_prefix_parselet(token->type()) };
   if (!prefix_parselet.has_value())
-    return nullptr;
+    {
+      throw SyntaxError{ token->line(), "Invalid start of expression: '" + token->lexeme() + "'" };
+    }
+
   auto lhs{ prefix_parselet.value()(*this, *token) };
 
-  while (Peek().has_value() && precedence < precedence_[Peek().value().type()])
+  while (peek().has_value() && precedence < precedence_[peek().value().type()])
     {
-      auto next{ Advance() };
+      auto next{ advance() };
       auto infix_parselet{ get_infix_parselet(next->type()) };
       if (!infix_parselet.has_value())
         {
-          return nullptr;
+          throw SyntaxError{ next->line(),
+                             "Invalid start of expression: '" + next->lexeme() + "'" };
         }
 
       lhs = infix_parselet.value()(*this, *next, lhs);
@@ -82,19 +133,19 @@ parse_binary_operator(Parser& parser, Token token, Expr* left)
     {
     case TokenType::PLUS:
       {
-        auto right{ parser.Parse(parser.precedence_[TokenType::PLUS]) };
+        auto right{ parser.parse_expr(parser.precedence_[TokenType::PLUS]) };
         return new AddExpr{ token, left, right };
       }
       break;
     case TokenType::MINUS:
       {
-        auto right{ parser.Parse(parser.precedence_[TokenType::MINUS]) };
+        auto right{ parser.parse_expr(parser.precedence_[TokenType::MINUS]) };
         return new SubExpr{ token, left, right };
       }
       break;
     case TokenType::STAR:
       {
-        auto right{ parser.Parse(parser.precedence_[TokenType::STAR]) };
+        auto right{ parser.parse_expr(parser.precedence_[TokenType::STAR]) };
         return new MultExpr{ token, left, right };
       }
       break;
@@ -106,11 +157,8 @@ parse_binary_operator(Parser& parser, Token token, Expr* left)
 Expr*
 parse_grouping_expression(Parser& parser, Token token)
 {
-  auto expr{ parser.Parse(0) };
-  auto rparen{ parser.Advance() };
-
-  assert(rparen.has_value() && rparen->type() == TokenType::RPAREN && "Expected closing paren");
+  auto expr{ parser.parse_expr(0) };
+  parser.consume(TokenType::RPAREN);
   return expr;
 }
-
 }

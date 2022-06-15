@@ -1,7 +1,9 @@
-#include "MIPSTranspiler.hpp"
+#include <cassert>
+
 #include "Expr.hpp"
 #include "ExprVisitor.hpp"
 #include "Instruction.hpp"
+#include "MIPSTranspiler.hpp"
 
 #define AS_REGISTER(o) std::any_cast<register_t>(o)
 #define AS_NUMBER(o) static_cast<ast::Number*>(o)
@@ -11,7 +13,7 @@
 namespace mmt
 {
 
-MIPSTranspiler::~MIPSTranspiler() { delete expr_; }
+MIPSTranspiler::~MIPSTranspiler() { delete program_; }
 
 register_t
 MIPSTranspiler::find_register() noexcept
@@ -62,9 +64,26 @@ MIPSTranspiler::Transpile()
   emit(".text");
   emit(".globl main");
   emit("main:");
-  expr_->Accept(*this);
+  program_->Accept(*this);
   emit("jr $ra");
   return result_;
+}
+
+std::any
+MIPSTranspiler::VisitProgram(ast::Program& program)
+{
+  for (ast::Stmt* stmt : program.stmts())
+    {
+      assert(stmt != nullptr);
+      stmt->Accept(*this);
+    }
+  return {};
+}
+
+std::any
+MIPSTranspiler::VisitStmt(ast::Stmt& stmt)
+{
+  return stmt.Accept(*this);
 }
 
 std::any

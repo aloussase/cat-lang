@@ -1,0 +1,19 @@
+program ::= stmts
+
+stmts  ::= stmt stmts'
+stmts' ::= stmts | Є
+
+stmt ::= varDecl | exprStmt
+
+varDecl ::= 'let' IDENTIFIER ':=' expr '.'
+
+exprStmt ::= expr '.'
+
+expr     ::= term expr'
+expr'    ::= exprRest expr' | Є
+exprRest ::= '+' term | '-' term 
+
+term  ::= factor term'
+term' ::= '*' factor | Є
+
+factor ::= NUMBER | '(' expr ')'

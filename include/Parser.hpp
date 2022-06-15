@@ -2,19 +2,16 @@
 
 #include <cassert>
 #include <functional>
+#include <memory>
 #include <optional>
 #include <unordered_map>
 #include <vector>
 
+#include "Expr.hpp"
 #include "Lexer.hpp"
 
 namespace mmt
 {
-
-namespace ast
-{
-class Expr;
-}
 
 class Parser;
 
@@ -25,6 +22,24 @@ ast::Expr* parse_binary_operator(Parser&, Token, ast::Expr*);
 class Parser
 {
 public:
+  class SyntaxError : public std::exception
+  {
+  public:
+    SyntaxError(int line, const std::string& msg)
+        : message{ "Syntax error at line " + std::to_string(line) + ": " + msg }
+    {
+    }
+
+    const char*
+    what() const noexcept override
+    {
+      return message.c_str();
+    }
+
+  private:
+    std::string message{};
+  };
+
   using PrefixParselet = std::function<ast::Expr*(Parser&, Token)>;
   using InfixParselet = std::function<ast::Expr*(Parser&, Token, ast::Expr*)>;
 
@@ -48,18 +63,21 @@ public:
     infix_parselets_[TokenType::STAR] = parse_binary_operator;
   }
 
-  ast::Expr* Parse(int precedence = 0);
-
+  std::unique_ptr<ast::Node> Parse();
   friend ast::Expr* parse_integer(Parser&, Token);
   friend ast::Expr* parse_grouping_expression(Parser&, Token);
   friend ast::Expr* parse_binary_operator(Parser&, Token, ast::Expr*);
 
 private:
+  ast::Stmt* parse_stmt();
+  ast::Expr* parse_expr(int precedence = 0);
+
   std::optional<PrefixParselet> get_prefix_parselet(TokenType) noexcept;
   std::optional<InfixParselet> get_infix_parselet(TokenType) noexcept;
 
-  std::optional<Token> Advance() noexcept;
-  std::optional<Token> Peek() const noexcept;
+  std::optional<Token> advance() noexcept;
+  std::optional<Token> peek() const noexcept;
+  void consume(TokenType);
 
   int current_ = 0;
   std::vector<Token> tokens_;

@@ -12,13 +12,20 @@ enum class TokenType
   MINUS,
   STAR,
   LPAREN,
-  RPAREN
+  RPAREN,
+  DOT,
+  END
 };
+
+[[nodiscard]] std::string token_type_as_str(TokenType);
 
 class Token
 {
 public:
-  Token(TokenType type, const std::string& lexeme) : type_{ type }, lexeme_{ lexeme } {}
+  Token(int line, TokenType type, const std::string& lexeme)
+      : line_{ line }, type_{ type }, lexeme_{ lexeme }
+  {
+  }
 
   [[nodiscard]] std::string
   lexeme() const noexcept
@@ -32,7 +39,16 @@ public:
     return type_;
   }
 
+  [[nodiscard]] std::string type_as_str();
+
+  [[nodiscard]] int
+  line() const noexcept
+  {
+    return line_;
+  }
+
 private:
+  int line_;
   TokenType type_;
   std::string lexeme_;
 };
@@ -42,6 +58,24 @@ std::ostream& operator<<(std::ostream&, Token);
 class Lexer
 {
 public:
+  class InvalidTokenException : public std::exception
+  {
+  public:
+    InvalidTokenException(int line, const std::string& msg)
+        : message{ "Invalid token at line " + std::to_string(line) + ": " + msg }
+    {
+    }
+
+    const char*
+    what() const noexcept override
+    {
+      return message.c_str();
+    }
+
+  private:
+    std::string message;
+  };
+
   Lexer(const std::string& source) : source_{ source }, tokens_{} {}
 
   std::vector<Token> Lex();

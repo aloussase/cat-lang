@@ -1,6 +1,8 @@
 #pragma once
 
 #include <any>
+#include <cassert>
+#include <vector>
 
 #include "ExprVisitor.hpp"
 #include "Lexer.hpp"
@@ -11,14 +13,56 @@ namespace mmt
 namespace ast
 {
 
+// Node
+class Node
+{
+public:
+  virtual ~Node() noexcept{};
+
+  virtual std::any Accept(ExprVisitor&) = 0;
+};
+
+class Stmt : public Node
+{
+public:
+  std::any Accept(ExprVisitor&) override;
+};
+
+class Program final : public Node
+{
+public:
+  Program() : stmts_{} {}
+
+  virtual ~Program()
+  {
+    for (Stmt* stmt : stmts_)
+      delete stmt;
+  }
+
+  std::any Accept(ExprVisitor&) override;
+
+  void
+  add_stmt(Stmt* stmt) noexcept
+  {
+    assert(stmt != nullptr);
+    stmts_.push_back(stmt);
+  }
+
+  [[nodiscard]] std::vector<Stmt*>
+  stmts() const noexcept
+  {
+    return stmts_;
+  }
+
+private:
+  std::vector<Stmt*> stmts_;
+};
+
 // Expr
-class Expr
+class Expr : public Stmt
 {
 public:
   Expr(Token token) : token_(token) {}
-  virtual ~Expr() noexcept{};
-
-  virtual std::any Accept(ExprVisitor&) = 0;
 
   [[nodiscard]] virtual Token
   token() const noexcept

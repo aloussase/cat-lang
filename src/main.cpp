@@ -13,7 +13,7 @@ repl()
   std::cout << "Press C-d to exit\n\n";
 
   std::cout << "> ";
-  while (std::cin >> line)
+  while (std::getline(std::cin, line))
     {
       std::cout << mmt::transpile(line) << "\n";
       std::cout << "> ";

@@ -7,6 +7,18 @@ namespace ast
 {
 
 std::any
+Program::Accept(ExprVisitor& visitor)
+{
+  return visitor.VisitProgram(*this);
+}
+
+std::any
+Stmt::Accept(ExprVisitor& visitor)
+{
+  return visitor.VisitStmt(*this);
+}
+
+std::any
 Number::Accept(ExprVisitor& visitor)
 {
   return visitor.VisitNumberExpr(*this);

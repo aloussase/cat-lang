@@ -8,8 +8,38 @@ namespace mmt
 std::ostream&
 operator<<(std::ostream& os, Token token)
 {
-  os << "Token{" << token.lexeme() << "}";
+  os << "Token{" << token.type_as_str() << "," << token.lexeme() << "}";
   return os;
+}
+
+std::string
+token_type_as_str(TokenType type)
+{
+  switch (type)
+    {
+    case TokenType::NUMBER:
+      return "number";
+    case TokenType::DOT:
+      return "dot";
+    case TokenType::LPAREN:
+      return "lparen";
+    case TokenType::MINUS:
+      return "minus";
+    case TokenType::PLUS:
+      return "plus";
+    case TokenType::RPAREN:
+      return "rparen";
+    case TokenType::STAR:
+      return "star";
+    case TokenType::END:
+      return "EOF";
+    }
+}
+
+std::string
+Token::type_as_str()
+{
+  return token_type_as_str(type_);
 }
 
 std::vector<Token>
@@ -21,19 +51,22 @@ Lexer::Lex()
       switch (c)
         {
         case '+':
-          tokens_.emplace_back(TokenType::PLUS, "+");
+          tokens_.emplace_back(line_, TokenType::PLUS, "+");
           break;
         case '-':
-          tokens_.emplace_back(TokenType::MINUS, "-");
+          tokens_.emplace_back(line_, TokenType::MINUS, "-");
           break;
         case '*':
-          tokens_.emplace_back(TokenType::STAR, "*");
+          tokens_.emplace_back(line_, TokenType::STAR, "*");
           break;
         case '(':
-          tokens_.emplace_back(TokenType::LPAREN, "(");
+          tokens_.emplace_back(line_, TokenType::LPAREN, "(");
           break;
         case ')':
-          tokens_.emplace_back(TokenType::RPAREN, ")");
+          tokens_.emplace_back(line_, TokenType::RPAREN, ")");
+          break;
+        case '.':
+          tokens_.emplace_back(line_, TokenType::DOT, ".");
           break;
         case '0':
         case '1':
@@ -54,11 +87,16 @@ Lexer::Lex()
           line_++;
           break;
         default:
-          std::cerr << line_ << ": Invalid token on input: " << c << "\n";
-          return {};
+          throw InvalidTokenException{ line_, std::string{ c } };
         }
     }
 
+#ifdef DEBUG
+  for (const auto& token : tokens_)
+    std::cout << token << "\n";
+#endif
+
+  tokens_.push_back(Token{ line_, TokenType::END, "EOF" });
   return tokens_;
 }
 
@@ -98,7 +136,7 @@ Lexer::Number(char c) noexcept
       result += c;
     }
 
-  return { TokenType::NUMBER, result };
+  return { line_, TokenType::NUMBER, result };
 }
 
 }

@@ -10,24 +10,30 @@ namespace mmt
 std::string
 transpile(const std::string& source)
 {
-  Lexer lexer{ source };
-  auto tokens{ lexer.Lex() };
-
-  if (tokens.size() == 0)
+  try
     {
-      return "";
+      Lexer lexer{ source };
+      auto tokens{ lexer.Lex() };
+
+      if (tokens.size() == 0)
+        {
+          return "";
+        }
+
+      Parser parser{ tokens };
+      auto program{ parser.Parse() };
+
+      if (program == nullptr)
+        {
+          return "";
+        }
+
+      return MIPSTranspiler(program.release()).Transpile();
     }
-
-  Parser parser{ tokens };
-  auto expr{ parser.Parse() };
-
-  if (expr == nullptr)
+  catch (const std::exception& ex)
     {
-      return "";
+      return ex.what();
     }
-
-  MIPSTranspiler transpiler{ expr };
-  return transpiler.Transpile();
 }
 
 }

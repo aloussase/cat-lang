@@ -7,6 +7,8 @@ namespace mmt
 
 namespace ast
 {
+class Program;
+class Stmt;
 class Number;
 class AddExpr;
 class SubExpr;
@@ -22,6 +24,8 @@ class ExprVisitor
 public:
   virtual ~ExprVisitor() noexcept{};
 
+  virtual std::any VisitProgram(mmt::ast::Program&) = 0;
+  virtual std::any VisitStmt(mmt::ast::Stmt&) = 0;
   virtual std::any VisitNumberExpr(mmt::ast::Number&) = 0;
   virtual std::any VisitAddExpr(mmt::ast::AddExpr&) = 0;
   virtual std::any VisitSubExpr(mmt::ast::SubExpr&) = 0;

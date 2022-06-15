@@ -14,7 +14,7 @@ namespace mmt
 class Instruction;
 namespace ast
 {
-class Expr;
+class Node;
 }
 
 class register_t
@@ -129,12 +129,14 @@ private:
 class MIPSTranspiler final : public ExprVisitor
 {
 public:
-  MIPSTranspiler(ast::Expr* expr) : expr_{ expr } {}
+  MIPSTranspiler(ast::Node* program) : program_{ program } {}
 
   ~MIPSTranspiler();
 
   std::string Transpile();
 
+  std::any VisitProgram(ast::Program&) override;
+  std::any VisitStmt(ast::Stmt&) override;
   std::any VisitNumberExpr(ast::Number&) override;
   std::any VisitAddExpr(ast::AddExpr&) override;
   std::any VisitSubExpr(ast::SubExpr&) override;
@@ -154,7 +156,7 @@ private:
     emit(Inst(args...));
   }
 
-  ast::Expr* expr_;
+  ast::Node* program_;
   std::string result_ = {};
   std::bitset<register_t::size> registers_ = register_t::min_value;
 };
