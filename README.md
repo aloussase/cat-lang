@@ -1,14 +1,15 @@
-# mmt
+# cat-lang
 
-mmt is an arithmetic expression transpiler to MIPS assembly.
+Cat is a dynamically typed programming language that transpiles to MIPS assembly.
 
 ## Description
 
-mmt is a simple language for educational purposes that transpiles to
-MIPS assembly. The objective is to help students who are learning MIPS
-to see how common operations are performed at a lower level.
+Cat is a simple programming language for educational purposes that
+transpiles to MIPS assembly. The objective is to help students who are
+learning MIPS to see how common operations are performed at a lower
+level.
 
-The mmt language supports the following operations:
+The Cat language supports the following operations:
 
 * `+`: Takes two operands and adds them together
 * `-`: Takes two operands and substracts the second from the first one
@@ -28,7 +29,7 @@ cmake -S . -B ./build
 cmake --build ./build
 
 # Spawn a REPL
-./build/src/mmt-exe
+./build/src/cat-exe
 ```
 
 ## License

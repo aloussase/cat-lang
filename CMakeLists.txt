@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.3)
 cmake_policy(VERSION 3.3)
 
-project(mmt CXX)
+project(cat-lang CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 

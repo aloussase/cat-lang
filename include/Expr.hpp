@@ -7,7 +7,7 @@
 #include "ExprVisitor.hpp"
 #include "Lexer.hpp"
 
-namespace mmt
+namespace cat
 {
 
 namespace ast
@@ -92,6 +92,20 @@ public:
 
 private:
   int value_ = 0;
+};
+
+class Identifier final : public Expr
+{
+public:
+  Identifier(Token token) : Expr{ token } {}
+
+  std::string
+  name()
+  {
+    return token_.lexeme();
+  }
+
+  std::any Accept(ExprVisitor&) override;
 };
 
 class BinaryExpr : public Expr

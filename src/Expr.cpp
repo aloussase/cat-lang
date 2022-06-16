@@ -1,6 +1,6 @@
 #include "Expr.hpp"
 
-namespace mmt
+namespace cat
 {
 
 namespace ast
@@ -21,7 +21,13 @@ Stmt::Accept(ExprVisitor& visitor)
 std::any
 Number::Accept(ExprVisitor& visitor)
 {
-  return visitor.VisitNumberExpr(*this);
+  return visitor.VisitNumber(*this);
+}
+
+std::any
+Identifier::Accept(ExprVisitor& visitor)
+{
+  return visitor.VisitIdentifier(*this);
 }
 
 std::any

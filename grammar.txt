@@ -11,9 +11,9 @@ exprStmt ::= expr '.'
 
 expr     ::= term expr'
 expr'    ::= exprRest expr' | Є
-exprRest ::= '+' term | '-' term 
+exprRest ::= '+' term | '-' term
 
 term  ::= factor term'
 term' ::= '*' factor | Є
 
-factor ::= NUMBER | '(' expr ')'
+factor ::= NUMBER | '(' expr ')' | IDENTIFIER

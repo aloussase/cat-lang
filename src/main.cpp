@@ -2,20 +2,20 @@
 #include <cstring>
 #include <iostream>
 
-#include "mmt.hpp"
+#include "cat.hpp"
 
 void
 repl()
 {
   std::string line;
 
-  std::cout << "Welcome to MMT (Math to MIPS Transpiler) v0.0.1\n";
+  std::cout << "Welcome to the Cat Language REPL v0.0.1\n";
   std::cout << "Press C-d to exit\n\n";
 
   std::cout << "> ";
   while (std::getline(std::cin, line))
     {
-      std::cout << mmt::transpile(line) << "\n";
+      std::cout << cat::transpile(line) << "\n";
       std::cout << "> ";
     }
 }
@@ -60,7 +60,7 @@ main(int argc, char** argv)
 
   char line[100];
   std::fgets(line, 100, fin);
-  std::fputs(mmt::transpile(line).c_str(), fout);
+  std::fputs(cat::transpile(line).c_str(), fout);
 
   fclose(fout);
   fclose(fin);

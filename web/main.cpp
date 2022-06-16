@@ -2,7 +2,7 @@
 
 #include "crow_all.h"
 
-#include "mmt.hpp"
+#include "cat.hpp"
 
 int
 main()
@@ -17,7 +17,7 @@ main()
   CROW_ROUTE(app, "/api/v1/traspilation")
       .methods(crow::HTTPMethod::POST)([](const crow::request& req) {
         if (auto body{ crow::json::load(req.body) }; body && body.has("data"))
-          return crow::response(mmt::transpile(body["data"].s()));
+          return crow::response(cat::transpile(body["data"].s()));
         return crow::response(400);
       });
 
@@ -32,7 +32,7 @@ main()
 
     auto page{ crow::mustache::load("index.mustache") };
 
-    if (auto result{ mmt::transpile(data) }; result != "")
+    if (auto result{ cat::transpile(data) }; result != "")
       return page.render({ { "did-transpile", true }, { "transpilation-result", result } });
 
     return page.render({ { "error", "Transpilation failed, please enter a valid expression" } });

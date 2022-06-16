@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-namespace mmt
+namespace cat
 {
 enum class TokenType
 {
@@ -14,6 +14,8 @@ enum class TokenType
   LPAREN,
   RPAREN,
   DOT,
+  IDENTIFIER,
+  KEYWORD,
   END
 };
 
@@ -50,6 +52,7 @@ public:
 private:
   int line_;
   TokenType type_;
+  // TODO: replace this with a string_view or some other kind of span
   std::string lexeme_;
 };
 
@@ -81,10 +84,14 @@ public:
   std::vector<Token> Lex();
 
 private:
-  Token Number(char c) noexcept;
-  bool IsAtEnd() const noexcept;
-  char Advance() noexcept;
-  char Peek() noexcept;
+  Token number(char) noexcept;
+  Token identifier(char) noexcept;
+
+  bool is_at_end() const noexcept;
+  bool is_identifier_character(char) const noexcept;
+
+  char advance() noexcept;
+  char peek() noexcept;
 
   std::vector<Token> tokens_;
   std::string source_;

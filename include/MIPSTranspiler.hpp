@@ -4,10 +4,11 @@
 #include <bitset>
 #include <cassert>
 #include <string>
+#include <unordered_map>
 
 #include "ExprVisitor.hpp"
 
-namespace mmt
+namespace cat
 {
 
 // Forward declarations
@@ -133,11 +134,15 @@ public:
 
   ~MIPSTranspiler();
 
+  class UnboundVariableException;
+  class Stack;
+
   std::string Transpile();
 
   std::any VisitProgram(ast::Program&) override;
   std::any VisitStmt(ast::Stmt&) override;
-  std::any VisitNumberExpr(ast::Number&) override;
+  std::any VisitNumber(ast::Number&) override;
+  std::any VisitIdentifier(ast::Identifier&) override;
   std::any VisitAddExpr(ast::AddExpr&) override;
   std::any VisitSubExpr(ast::SubExpr&) override;
   std::any VisitMultExpr(ast::MultExpr&) override;
@@ -159,6 +164,44 @@ private:
   ast::Node* program_;
   std::string result_ = {};
   std::bitset<register_t::size> registers_ = register_t::min_value;
+  std::unordered_map<std::string, int> variables_ = {};
+};
+
+class MIPSTranspiler::UnboundVariableException : public std::exception
+{
+public:
+  UnboundVariableException(int line, const std::string& msg)
+      : message{ "Unbound variable at line " + std::to_string(line) + ": " + msg }
+  {
+  }
+
+  const char*
+  what() const noexcept override
+  {
+    return message.c_str();
+  }
+
+private:
+  std::string message = {};
+};
+
+class MIPSTranspiler::Stack
+{
+public:
+  constexpr void
+  push() noexcept
+  {
+    size_ += 4;
+  }
+
+  constexpr void
+  pop() noexcept
+  {
+    size_ -= 4;
+  }
+
+private:
+  int size_ = {};
 };
 
 }

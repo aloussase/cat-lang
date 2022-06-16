@@ -1,18 +1,15 @@
-add_library(mmt
+add_library(cat-lang
   Expr.cpp
   MIPSTranspiler.cpp
   Lexer.cpp
   Parser.cpp
-  mmt.cpp
+  cat.cpp
 )
 
-if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-  message(STATUS "Running in Debug mode")
-  target_compile_definitions(mmt PRIVATE DEBUG)
-endif()
+target_compile_definitions(cat-lang PUBLIC "$<$<CONFIG:DEBUG>:DEBUG>")
 
-add_executable(mmt-exe
+add_executable(cat-exe
   main.cpp
 )
 
-target_link_libraries(mmt-exe PRIVATE mmt)
+target_link_libraries(cat-exe PRIVATE cat-lang)

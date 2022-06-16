@@ -10,7 +10,7 @@
 
 #define IS_NUMBER(o) ((o)->token().type() == TokenType::NUMBER)
 
-namespace mmt
+namespace cat
 {
 
 MIPSTranspiler::~MIPSTranspiler() { delete program_; }
@@ -87,11 +87,26 @@ MIPSTranspiler::VisitStmt(ast::Stmt& stmt)
 }
 
 std::any
-MIPSTranspiler::VisitNumberExpr(ast::Number& expr)
+MIPSTranspiler::VisitNumber(ast::Number& expr)
 {
   auto r{ find_register() };
   emit<Instruction::LI>(r, expr.value());
   return r;
+}
+
+std::any
+MIPSTranspiler::VisitIdentifier(ast::Identifier& identifier)
+{
+  if (auto offset = variables_.find(identifier.name()); offset != variables_.end())
+    {
+      auto rs{ find_register() };
+      emit<Instruction::LW>(rs, variables_[identifier.name()], register_t{ register_t::name::SP });
+      return rs;
+    }
+  else
+    {
+      throw UnboundVariableException{ identifier.token().line(), identifier.name() };
+    }
 }
 
 std::any

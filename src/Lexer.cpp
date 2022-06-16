@@ -2,7 +2,7 @@
 
 #include "Lexer.hpp"
 
-namespace mmt
+namespace cat
 {
 
 std::ostream&
@@ -31,6 +31,8 @@ token_type_as_str(TokenType type)
       return "rparen";
     case TokenType::STAR:
       return "star";
+    case TokenType::IDENTIFIER:
+      return "identifier";
     case TokenType::END:
       return "EOF";
     }
@@ -45,9 +47,9 @@ Token::type_as_str()
 std::vector<Token>
 Lexer::Lex()
 {
-  while (!IsAtEnd())
+  while (!is_at_end())
     {
-      char c{ Advance() };
+      char c{ advance() };
       switch (c)
         {
         case '+':
@@ -78,7 +80,7 @@ Lexer::Lex()
         case '7':
         case '8':
         case '9':
-          tokens_.push_back(Number(c));
+          tokens_.push_back(number(c));
           break;
         case ' ':
         case '\t':
@@ -87,7 +89,12 @@ Lexer::Lex()
           line_++;
           break;
         default:
-          throw InvalidTokenException{ line_, std::string{ c } };
+          {
+            if (is_identifier_character(c))
+              tokens_.push_back(identifier(c));
+            else
+              throw InvalidTokenException{ line_, std::string{ c } };
+          }
         }
     }
 
@@ -101,42 +108,62 @@ Lexer::Lex()
 }
 
 bool
-Lexer::IsAtEnd() const noexcept
+Lexer::is_at_end() const noexcept
 {
   return !(current_ < source_.length());
 }
 
+bool
+Lexer::is_identifier_character(char c) const noexcept
+{
+  return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_'
+         || c == '/';
+}
+
 char
-Lexer::Advance() noexcept
+Lexer::advance() noexcept
 {
   return source_[current_++];
 }
 
 bool
-IsDigit(char c)
+is_digit(char c)
 {
-  return c == '0' || c == '1' || c == '2' || c == '3' || c == '4' || c == '5' || c == '6'
-         || c == '7' || c == '8' || c == '9';
+  return c >= '0' && c <= '9';
 }
 
 char
-Lexer::Peek() noexcept
+Lexer::peek() noexcept
 {
   return source_[current_];
 }
 
 Token
-Lexer::Number(char c) noexcept
+Lexer::number(char c) noexcept
 {
   std::string result{ c };
 
-  while (!IsAtEnd() && IsDigit(Peek()))
+  while (!is_at_end() && is_digit(peek()))
     {
-      c = Advance();
+      c = advance();
       result += c;
     }
 
   return { line_, TokenType::NUMBER, result };
+}
+
+Token
+Lexer::identifier(char c) noexcept
+{
+  std::string result{ c };
+
+  while (!is_at_end() && is_identifier_character(peek()))
+    {
+      c = advance();
+      result += c;
+    }
+
+  return { line_, TokenType::IDENTIFIER, result };
 }
 
 }

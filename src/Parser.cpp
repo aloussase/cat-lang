@@ -1,9 +1,9 @@
 #include "Parser.hpp"
 #include "Expr.hpp"
 
-using namespace mmt::ast;
+using namespace cat::ast;
 
-namespace mmt
+namespace cat
 {
 
 std::optional<Token>
@@ -124,6 +124,12 @@ Expr*
 parse_integer(Parser& parser, Token token)
 {
   return new Number(token, std::stoi(token.lexeme()));
+}
+
+Expr*
+parse_identifier(Parser& parser, Token token)
+{
+  return new Identifier{ token };
 }
 
 Expr*

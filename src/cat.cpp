@@ -1,10 +1,10 @@
-#include "mmt.hpp"
+#include "cat.hpp"
 
 #include "Lexer.hpp"
 #include "MIPSTranspiler.hpp"
 #include "Parser.hpp"
 
-namespace mmt
+namespace cat
 {
 
 std::string

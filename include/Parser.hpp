@@ -10,12 +10,13 @@
 #include "Expr.hpp"
 #include "Lexer.hpp"
 
-namespace mmt
+namespace cat
 {
 
 class Parser;
 
 ast::Expr* parse_integer(Parser&, Token);
+ast::Expr* parse_identifier(Parser&, Token);
 ast::Expr* parse_grouping_expression(Parser&, Token);
 ast::Expr* parse_binary_operator(Parser&, Token, ast::Expr*);
 
@@ -51,10 +52,12 @@ public:
     precedence_[TokenType::PLUS] = 1;
     precedence_[TokenType::STAR] = 2;
     precedence_[TokenType::NUMBER] = 3;
+    precedence_[TokenType::IDENTIFIER] = 3;
     precedence_[TokenType::LPAREN] = 8;
 
     // Register prefix parselets
     prefix_parselets_[TokenType::NUMBER] = parse_integer;
+    prefix_parselets_[TokenType::IDENTIFIER] = parse_identifier;
     prefix_parselets_[TokenType::LPAREN] = parse_grouping_expression;
 
     // Register infix parselets
@@ -64,7 +67,9 @@ public:
   }
 
   std::unique_ptr<ast::Node> Parse();
+
   friend ast::Expr* parse_integer(Parser&, Token);
+  friend ast::Expr* parse_identifier(Parser&, Token);
   friend ast::Expr* parse_grouping_expression(Parser&, Token);
   friend ast::Expr* parse_binary_operator(Parser&, Token, ast::Expr*);
 

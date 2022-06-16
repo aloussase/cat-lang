@@ -2,7 +2,7 @@
 
 #include <string>
 
-namespace mmt
+namespace cat
 {
 
 class Instruction
@@ -19,6 +19,8 @@ public:
   class MULT;
   class MFLO;
   class ADDI;
+  class LW;
+  class SW;
 };
 
 class Instruction::LI : public Instruction
@@ -142,6 +144,46 @@ private:
   std::string rd_;
   std::string rs_;
   int constant_;
+};
+
+class Instruction::LW : public Instruction
+{
+public:
+  LW(const std::string& rs, int offset, const std::string& rd)
+      : rs_{ rs }, rd_{ rd }, offset_{ offset }
+  {
+  }
+
+  [[nodiscard]] std::string
+  to_s() const noexcept override
+  {
+    return "lw " + rs_ + ", " + std::to_string(offset_) + "(" + rd_ + ")";
+  }
+
+private:
+  std::string rs_ = {};
+  std::string rd_ = {};
+  int offset_ = {};
+};
+
+class Instruction::SW : public Instruction
+{
+public:
+  SW(const std::string& rs, int offset, const std::string& rd)
+      : rs_{ rs }, rd_{ rd }, offset_{ offset }
+  {
+  }
+
+  [[nodiscard]] std::string
+  to_s() const noexcept override
+  {
+    return "sw " + rs_ + ", " + std::to_string(offset_) + "(" + rd_ + ")";
+  }
+
+private:
+  std::string rs_ = {};
+  std::string rd_ = {};
+  int offset_ = {};
 };
 
 }

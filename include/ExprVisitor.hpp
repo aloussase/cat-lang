@@ -2,7 +2,7 @@
 
 #include <any>
 
-namespace mmt
+namespace cat
 {
 
 namespace ast
@@ -10,6 +10,7 @@ namespace ast
 class Program;
 class Stmt;
 class Number;
+class Identifier;
 class AddExpr;
 class SubExpr;
 class MultExpr;
@@ -24,12 +25,13 @@ class ExprVisitor
 public:
   virtual ~ExprVisitor() noexcept{};
 
-  virtual std::any VisitProgram(mmt::ast::Program&) = 0;
-  virtual std::any VisitStmt(mmt::ast::Stmt&) = 0;
-  virtual std::any VisitNumberExpr(mmt::ast::Number&) = 0;
-  virtual std::any VisitAddExpr(mmt::ast::AddExpr&) = 0;
-  virtual std::any VisitSubExpr(mmt::ast::SubExpr&) = 0;
-  virtual std::any VisitMultExpr(mmt::ast::MultExpr&) = 0;
+  virtual std::any VisitProgram(cat::ast::Program&) = 0;
+  virtual std::any VisitStmt(cat::ast::Stmt&) = 0;
+  virtual std::any VisitNumber(cat::ast::Number&) = 0;
+  virtual std::any VisitIdentifier(cat::ast::Identifier&) = 0;
+  virtual std::any VisitAddExpr(cat::ast::AddExpr&) = 0;
+  virtual std::any VisitSubExpr(cat::ast::SubExpr&) = 0;
+  virtual std::any VisitMultExpr(cat::ast::MultExpr&) = 0;
 };
 
 }

@@ -2,7 +2,7 @@
 
 #include <string>
 
-namespace mmt
+namespace cat
 {
 
 std::string transpile(const std::string&);
