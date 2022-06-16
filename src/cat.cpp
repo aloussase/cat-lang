@@ -1,5 +1,6 @@
-#include "cat.hpp"
+#include <iostream>
 
+#include "cat.hpp"
 #include "Lexer.hpp"
 #include "MIPSTranspiler.hpp"
 #include "Parser.hpp"
@@ -12,23 +13,23 @@ transpile(const std::string& source)
 {
   try
     {
-      Lexer lexer{ source };
-      auto tokens{ lexer.Lex() };
+      std::vector<cat::Diagnostic> diagnostics{};
+      auto tokens{ Lexer{ source, diagnostics }.Lex() };
 
-      if (tokens.size() == 0)
+#ifdef DEBUG
+      for (const auto& token : tokens)
+        std::cout << token << "\n";
+#endif
+
+      auto program{ Parser(tokens).Parse() };
+      auto result{ MIPSTranspiler(program.release()).Transpile() };
+
+      for (const auto& diagnostic : diagnostics)
         {
-          return "";
+          diagnostic.show();
         }
 
-      Parser parser{ tokens };
-      auto program{ parser.Parse() };
-
-      if (program == nullptr)
-        {
-          return "";
-        }
-
-      return MIPSTranspiler(program.release()).Transpile();
+      return result;
     }
   catch (const std::exception& ex)
     {

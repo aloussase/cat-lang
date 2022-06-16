@@ -55,22 +55,22 @@ Lexer::Lex()
       switch (c)
         {
         case '+':
-          tokens_.emplace_back(line_, TokenType::PLUS, "+");
+          m_tokens.emplace_back(m_line, TokenType::PLUS, "+");
           break;
         case '-':
-          tokens_.emplace_back(line_, TokenType::MINUS, "-");
+          m_tokens.emplace_back(m_line, TokenType::MINUS, "-");
           break;
         case '*':
-          tokens_.emplace_back(line_, TokenType::STAR, "*");
+          m_tokens.emplace_back(m_line, TokenType::STAR, "*");
           break;
         case '(':
-          tokens_.emplace_back(line_, TokenType::LPAREN, "(");
+          m_tokens.emplace_back(m_line, TokenType::LPAREN, "(");
           break;
         case ')':
-          tokens_.emplace_back(line_, TokenType::RPAREN, ")");
+          m_tokens.emplace_back(m_line, TokenType::RPAREN, ")");
           break;
         case '.':
-          tokens_.emplace_back(line_, TokenType::DOT, ".");
+          m_tokens.emplace_back(m_line, TokenType::DOT, ".");
           break;
         case '0':
         case '1':
@@ -82,46 +82,46 @@ Lexer::Lex()
         case '7':
         case '8':
         case '9':
-          tokens_.push_back(number(c));
+          m_tokens.push_back(number(c));
           break;
         case ':':
           {
             if (c = advance(); c != '=')
               {
-                throw InvalidTokenException{ line_, "Unexpected token ':', did you mean ':='?" };
+                m_diagnostics.emplace_back(m_line, "Unexpected token ':'");
+                m_diagnostics.emplace_back(m_line, Diagnostic::Severity::HINT,
+                                           "Maybe you meant to use the assignment operator ':='?");
               }
-            tokens_.emplace_back(line_, TokenType::WALRUS, ":=");
+            else
+              {
+                m_tokens.emplace_back(m_line, TokenType::WALRUS, ":=");
+              }
           }
         case ' ':
         case '\t':
         case '\r':
           break;
         case '\n':
-          line_++;
+          m_line++;
           break;
         default:
           {
             if (is_identifier_character(c))
-              tokens_.push_back(identifier(c));
+              m_tokens.push_back(identifier(c));
             else
-              throw InvalidTokenException(line_, std::string{ c });
+              m_diagnostics.emplace_back(m_line, "Invalid token '" + std::string{ c } + "'");
           }
         }
     }
 
-#ifdef DEBUG
-  for (const auto& token : tokens_)
-    std::cout << token << "\n";
-#endif
-
-  tokens_.push_back(Token{ line_, TokenType::END, "EOF" });
-  return tokens_;
+  m_tokens.push_back(Token{ m_line, TokenType::END, "EOF" });
+  return m_tokens;
 }
 
 bool
 Lexer::is_at_end() const noexcept
 {
-  return !(current_ < source_.length());
+  return !(m_current < m_source.length());
 }
 
 bool
@@ -134,7 +134,7 @@ Lexer::is_identifier_character(char c) const noexcept
 char
 Lexer::advance() noexcept
 {
-  return source_[current_++];
+  return m_source[m_current++];
 }
 
 bool
@@ -146,7 +146,7 @@ is_digit(char c)
 char
 Lexer::peek() noexcept
 {
-  return source_[current_];
+  return m_source[m_current];
 }
 
 Token
@@ -160,7 +160,7 @@ Lexer::number(char c) noexcept
       result += c;
     }
 
-  return { line_, TokenType::NUMBER, result };
+  return { m_line, TokenType::NUMBER, result };
 }
 
 Token
@@ -174,7 +174,7 @@ Lexer::identifier(char c) noexcept
       result += c;
     }
 
-  return { line_, TokenType::IDENTIFIER, result };
+  return { m_line, TokenType::IDENTIFIER, result };
 }
 
 }

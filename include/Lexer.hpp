@@ -3,6 +3,10 @@
 #include <string>
 #include <vector>
 
+#include <vector>
+
+#include "diagnostic.hpp"
+
 namespace cat
 {
 enum class TokenType
@@ -61,7 +65,10 @@ std::ostream& operator<<(std::ostream&, Token);
 class Lexer
 {
 public:
-  Lexer(const std::string& source) : source_{ source }, tokens_{} {}
+  Lexer(const std::string& source, std::vector<Diagnostic>& errors)
+      : m_source{ source }, m_diagnostics{ errors }
+  {
+  }
 
   class InvalidTokenException;
 
@@ -77,10 +84,11 @@ private:
   char advance() noexcept;
   char peek() noexcept;
 
-  std::vector<Token> tokens_;
-  std::string source_;
-  int current_ = 0;
-  int line_ = 1;
+  std::vector<Token> m_tokens = {};
+  std::vector<Diagnostic>& m_diagnostics;
+  std::string m_source;
+  int m_current = 0;
+  int m_line = 1;
 };
 
 class Lexer::InvalidTokenException : public std::exception
