@@ -93,7 +93,7 @@ Lexer::Lex()
             if (is_identifier_character(c))
               tokens_.push_back(identifier(c));
             else
-              throw InvalidTokenException{ line_, std::string{ c } };
+              throw InvalidTokenException(line_, std::string{ c });
           }
         }
     }

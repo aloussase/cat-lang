@@ -23,23 +23,7 @@ ast::Expr* parse_binary_operator(Parser&, Token, ast::Expr*);
 class Parser
 {
 public:
-  class SyntaxError : public std::exception
-  {
-  public:
-    SyntaxError(int line, const std::string& msg)
-        : message{ "Syntax error at line " + std::to_string(line) + ": " + msg }
-    {
-    }
-
-    const char*
-    what() const noexcept override
-    {
-      return message.c_str();
-    }
-
-  private:
-    std::string message{};
-  };
+  class SyntaxError;
 
   using PrefixParselet = std::function<ast::Expr*(Parser&, Token)>;
   using InfixParselet = std::function<ast::Expr*(Parser&, Token, ast::Expr*)>;
@@ -89,6 +73,24 @@ private:
   std::unordered_map<TokenType, int> precedence_;
   std::unordered_map<TokenType, PrefixParselet> prefix_parselets_;
   std::unordered_map<TokenType, InfixParselet> infix_parselets_;
+};
+
+class Parser::SyntaxError : public std::exception
+{
+public:
+  SyntaxError(int line, const std::string& msg)
+      : message{ "Syntax error at line " + std::to_string(line) + ": " + msg }
+  {
+  }
+
+  const char*
+  what() const noexcept override
+  {
+    return message.c_str();
+  }
+
+private:
+  std::string message{};
 };
 
 }

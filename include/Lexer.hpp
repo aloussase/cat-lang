@@ -61,25 +61,9 @@ std::ostream& operator<<(std::ostream&, Token);
 class Lexer
 {
 public:
-  class InvalidTokenException : public std::exception
-  {
-  public:
-    InvalidTokenException(int line, const std::string& msg)
-        : message{ "Invalid token at line " + std::to_string(line) + ": " + msg }
-    {
-    }
-
-    const char*
-    what() const noexcept override
-    {
-      return message.c_str();
-    }
-
-  private:
-    std::string message;
-  };
-
   Lexer(const std::string& source) : source_{ source }, tokens_{} {}
+
+  class InvalidTokenException;
 
   std::vector<Token> Lex();
 
@@ -96,7 +80,25 @@ private:
   std::vector<Token> tokens_;
   std::string source_;
   int current_ = 0;
-  int line_ = 0;
+  int line_ = 1;
+};
+
+class Lexer::InvalidTokenException : public std::exception
+{
+public:
+  InvalidTokenException(int line, const std::string& msg)
+  {
+    message = "Invalid token at line " + std::to_string(line) + ": " + msg;
+  }
+
+  const char*
+  what() const noexcept override
+  {
+    return message.c_str();
+  }
+
+private:
+  std::string message = {};
 };
 
 }

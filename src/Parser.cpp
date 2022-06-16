@@ -27,8 +27,10 @@ Parser::consume(TokenType type)
 {
   if (auto token{ advance() }; token->type() != type)
     {
-      throw SyntaxError{ token->line(), "Unexpected token '" + token->type_as_str()
-                                            + "', expected '" + token_type_as_str(type) + "'" };
+      auto actual_type{ token->type_as_str() };
+      auto expected_type{ token_type_as_str(type) };
+      throw SyntaxError{ token->line(), "Unexpected token '" + actual_type + "', expected '"
+                                            + expected_type + "'" };
     }
 }
 
