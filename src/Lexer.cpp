@@ -84,6 +84,7 @@ Lexer::Lex()
           break;
         case ' ':
         case '\t':
+        case '\r':
           break;
         case '\n':
           line_++;
