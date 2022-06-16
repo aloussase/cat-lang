@@ -15,7 +15,7 @@ enum class TokenType
   RPAREN,
   DOT,
   IDENTIFIER,
-  KEYWORD,
+  WALRUS,
   END
 };
 

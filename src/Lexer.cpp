@@ -20,19 +20,21 @@ token_type_as_str(TokenType type)
     case TokenType::NUMBER:
       return "number";
     case TokenType::DOT:
-      return "dot";
+      return ".";
     case TokenType::LPAREN:
-      return "lparen";
+      return "(";
     case TokenType::MINUS:
-      return "minus";
+      return "-";
     case TokenType::PLUS:
-      return "plus";
+      return "+";
     case TokenType::RPAREN:
-      return "rparen";
+      return ")";
     case TokenType::STAR:
-      return "star";
+      return "*";
     case TokenType::IDENTIFIER:
       return "identifier";
+    case TokenType::WALRUS:
+      return ":=";
     case TokenType::END:
       return "EOF";
     }
