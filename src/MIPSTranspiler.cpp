@@ -1,9 +1,9 @@
 #include <cassert>
 
-#include "Expr.hpp"
 #include "ExprVisitor.hpp"
 #include "Instruction.hpp"
 #include "MIPSTranspiler.hpp"
+#include "ast.hpp"
 
 #define AS_REGISTER(o) std::any_cast<register_t>(o)
 #define AS_NUMBER(o) static_cast<ast::Number*>(o)
@@ -84,6 +84,12 @@ std::any
 MIPSTranspiler::VisitStmt(ast::Stmt& stmt)
 {
   return stmt.Accept(*this);
+}
+
+std::any
+MIPSTranspiler::VisitLetStmt(ast::LetStmt& letStmt)
+{
+  assert(false && "VisitLetStmt not implemented");
 }
 
 std::any

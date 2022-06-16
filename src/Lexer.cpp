@@ -84,6 +84,14 @@ Lexer::Lex()
         case '9':
           tokens_.push_back(number(c));
           break;
+        case ':':
+          {
+            if (c = advance(); c != '=')
+              {
+                throw InvalidTokenException{ line_, "Unexpected token ':', did you mean ':='?" };
+              }
+            tokens_.emplace_back(line_, TokenType::WALRUS, ":=");
+          }
         case ' ':
         case '\t':
         case '\r':

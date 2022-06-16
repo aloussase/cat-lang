@@ -1,5 +1,5 @@
 #include "Parser.hpp"
-#include "Expr.hpp"
+#include "ast.hpp"
 
 using namespace cat::ast;
 
@@ -78,17 +78,32 @@ Parser::Parse()
 Stmt*
 Parser::parse_stmt()
 {
-  auto expr{ parse_expr(0) };
-  try
+  auto token{ peek() };
+  if (!token.has_value())
+    return nullptr;
+
+  if (token->type() == TokenType::IDENTIFIER && token->lexeme() == "let")
     {
-      consume(TokenType::DOT);
+      advance();
+      return parse_let_stmt();
     }
-  catch (...)
-    {
-      delete expr;
-      throw;
-    }
+
+  auto expr{ parse_expr() };
+  consume(TokenType::DOT);
   return expr;
+}
+
+LetStmt*
+Parser::parse_let_stmt()
+{
+  auto identifier{ parse_expr() };
+  consume(TokenType::WALRUS);
+  if (identifier->token().type() != TokenType::IDENTIFIER)
+    {
+      throw Parser::SyntaxError{ identifier->token().line(), "Expected identifier after let" };
+    }
+  auto value{ parse_expr() };
+  return new LetStmt{ static_cast<Identifier*>(identifier), value };
 }
 
 Expr*
@@ -101,7 +116,8 @@ Parser::parse_expr(int precedence)
   auto prefix_parselet{ get_prefix_parselet(token->type()) };
   if (!prefix_parselet.has_value())
     {
-      throw SyntaxError{ token->line(), "Invalid start of expression: '" + token->lexeme() + "'" };
+      throw SyntaxError{ token->line(),
+                         "Invalid start of prefix expression: '" + token->lexeme() + "'" };
     }
 
   auto lhs{ prefix_parselet.value()(*this, *token) };
@@ -113,7 +129,7 @@ Parser::parse_expr(int precedence)
       if (!infix_parselet.has_value())
         {
           throw SyntaxError{ next->line(),
-                             "Invalid start of expression: '" + next->lexeme() + "'" };
+                             "Invalid start of infix expression: '" + next->lexeme() + "'" };
         }
 
       lhs = infix_parselet.value()(*this, *next, lhs);
@@ -131,6 +147,7 @@ parse_integer(Parser& parser, Token token)
 Expr*
 parse_identifier(Parser& parser, Token token)
 {
+
   return new Identifier{ token };
 }
 
@@ -169,4 +186,5 @@ parse_grouping_expression(Parser& parser, Token token)
   parser.consume(TokenType::RPAREN);
   return expr;
 }
+
 }

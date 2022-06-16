@@ -13,6 +13,19 @@ namespace cat
 namespace ast
 {
 
+// Forward declarations
+class Node;
+class Program;
+class Stmt;
+class LetStmt;
+class Expr;
+class Identifier;
+class Number;
+class BinaryExpr;
+class AddExpr;
+class SubExpr;
+class MultExpr;
+
 // Node
 class Node
 {
@@ -33,7 +46,7 @@ class Program final : public Node
 public:
   Program() : stmts_{} {}
 
-  virtual ~Program()
+  ~Program()
   {
     for (Stmt* stmt : stmts_)
       delete stmt;
@@ -41,21 +54,28 @@ public:
 
   std::any Accept(ExprVisitor&) override;
 
-  void
-  add_stmt(Stmt* stmt) noexcept
-  {
-    assert(stmt != nullptr);
-    stmts_.push_back(stmt);
-  }
-
-  [[nodiscard]] std::vector<Stmt*>
-  stmts() const noexcept
-  {
-    return stmts_;
-  }
+  void add_stmt(Stmt* stmt) noexcept;
+  [[nodiscard]] std::vector<Stmt*> stmts() const noexcept;
 
 private:
   std::vector<Stmt*> stmts_;
+};
+
+class LetStmt final : public Stmt
+{
+public:
+  LetStmt(Identifier* identifier, Expr* expr) : identifier_{ identifier }, value_{ expr } {}
+
+  ~LetStmt();
+
+  std::any Accept(ExprVisitor&) override;
+
+  [[nodiscard]] const Identifier& identifier() const noexcept;
+  [[nodiscard]] const Expr& value() const noexcept;
+
+private:
+  Identifier* identifier_;
+  Expr* value_;
 };
 
 // Expr
@@ -82,11 +102,7 @@ class Number final : public Expr
 public:
   Number(Token token, int value) : Expr{ token }, value_{ value } {}
 
-  int
-  value()
-  {
-    return value_;
-  }
+  [[nodiscard]] int value() const noexcept;
 
   std::any Accept(ExprVisitor&) override;
 

@@ -1,5 +1,5 @@
 add_library(cat-lang
-  Expr.cpp
+  ast.cpp
   MIPSTranspiler.cpp
   Lexer.cpp
   Parser.cpp

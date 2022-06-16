@@ -13,10 +13,6 @@ namespace cat
 
 // Forward declarations
 class Instruction;
-namespace ast
-{
-class Node;
-}
 
 class register_t
 {
@@ -141,6 +137,7 @@ public:
 
   std::any VisitProgram(ast::Program&) override;
   std::any VisitStmt(ast::Stmt&) override;
+  std::any VisitLetStmt(ast::LetStmt&) override;
   std::any VisitNumber(ast::Number&) override;
   std::any VisitIdentifier(ast::Identifier&) override;
   std::any VisitAddExpr(ast::AddExpr&) override;
