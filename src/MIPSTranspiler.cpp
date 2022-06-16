@@ -1,4 +1,7 @@
 #include <cassert>
+#ifdef DEBUG
+#include <iostream>
+#endif
 
 #include "ExprVisitor.hpp"
 #include "Instruction.hpp"
@@ -20,11 +23,14 @@ MIPSTranspiler::find_register() noexcept
 {
   assert(!registers_.all());
 
-  for (int register_number = register_t::min_value; register_number < register_t::max_value;
+  for (int register_number = register_t::min_value; register_number <= register_t::max_value;
        register_number++)
     {
       if (int pos = register_number - register_t::min_value; !registers_.test(pos))
         {
+#ifdef DEBUG
+          std::cout << "Giving register number " << pos << "\n";
+#endif
           registers_ |= 1 << pos; // Mark the register as being used
           return { register_number };
         }
@@ -36,7 +42,10 @@ MIPSTranspiler::find_register() noexcept
 void
 MIPSTranspiler::release_register(register_t reg)
 {
-  registers_ &= ~(1 << reg);
+#ifdef DEBUG
+  std::cout << "Releasing register " << (reg - register_t::min_value) << "\n";
+#endif
+  registers_ &= ~(1 << (reg - register_t::min_value));
 }
 
 void
@@ -83,13 +92,21 @@ MIPSTranspiler::VisitProgram(ast::Program& program)
 std::any
 MIPSTranspiler::VisitStmt(ast::Stmt& stmt)
 {
-  return stmt.Accept(*this);
+  stmt.Accept(*this);
+  return {};
 }
 
 std::any
 MIPSTranspiler::VisitLetStmt(ast::LetStmt& letStmt)
 {
-  assert(false && "VisitLetStmt not implemented");
+  auto offset{ m_stack.push() };
+  auto rs{ letStmt.value().Accept(*this) };
+
+  m_variables[letStmt.identifier().name()] = offset;
+  emit<Instruction::SW>(AS_REGISTER(rs), offset, register_t{ register_t::name::SP });
+
+  release_register(AS_REGISTER(rs));
+  return {};
 }
 
 std::any
@@ -103,10 +120,10 @@ MIPSTranspiler::VisitNumber(ast::Number& expr)
 std::any
 MIPSTranspiler::VisitIdentifier(ast::Identifier& identifier)
 {
-  if (auto offset = variables_.find(identifier.name()); offset != variables_.end())
+  if (auto offset = m_variables.find(identifier.name()); offset != m_variables.end())
     {
       auto rs{ find_register() };
-      emit<Instruction::LW>(rs, variables_[identifier.name()], register_t{ register_t::name::SP });
+      emit<Instruction::LW>(rs, m_variables[identifier.name()], register_t{ register_t::name::SP });
       return rs;
     }
   else

@@ -71,7 +71,7 @@ public:
   std::any Accept(ExprVisitor&) override;
 
   [[nodiscard]] const Identifier& identifier() const noexcept;
-  [[nodiscard]] const Expr& value() const noexcept;
+  [[nodiscard]] Expr& value() const noexcept;
 
 private:
   Identifier* identifier_;
@@ -115,8 +115,8 @@ class Identifier final : public Expr
 public:
   Identifier(Token token) : Expr{ token } {}
 
-  std::string
-  name()
+  [[nodiscard]] std::string
+  name() const noexcept
   {
     return token_.lexeme();
   }

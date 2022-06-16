@@ -103,6 +103,7 @@ Parser::parse_let_stmt()
       throw Parser::SyntaxError{ identifier->token().line(), "Expected identifier after let" };
     }
   auto value{ parse_expr() };
+  consume(TokenType::DOT);
   return new LetStmt{ static_cast<Identifier*>(identifier), value };
 }
 

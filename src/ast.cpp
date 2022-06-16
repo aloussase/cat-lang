@@ -46,7 +46,7 @@ LetStmt::identifier() const noexcept
   return *identifier_;
 }
 
-const Expr&
+Expr&
 LetStmt::value() const noexcept
 {
   return *value_;

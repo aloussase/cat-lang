@@ -21,6 +21,8 @@ public:
   static const int max_value = 25;
   static const int size = max_value - min_value;
 
+  // TODO: registers from $v0 to $a3 are not used,
+  //       reserving them for function calls.
   enum class name
   {
     ZERO,
@@ -114,6 +116,8 @@ public:
         return "$t8";
       case name::T9:
         return "$t9";
+      case name::SP:
+        return "$sp";
       }
 
     return "unhandled register to std::string conversion";
@@ -131,7 +135,27 @@ public:
   ~MIPSTranspiler();
 
   class UnboundVariableException;
-  class Stack;
+
+  // TODO: Check for stack overflow.
+  class Stack
+  {
+  public:
+    constexpr int
+    push() noexcept
+    {
+      size_ += 4;
+      return size_ - 4;
+    }
+
+    constexpr void
+    pop() noexcept
+    {
+      size_ -= 4;
+    }
+
+  private:
+    int size_ = {};
+  };
 
   std::string Transpile();
 
@@ -161,7 +185,8 @@ private:
   ast::Node* program_;
   std::string result_ = {};
   std::bitset<register_t::size> registers_ = register_t::min_value;
-  std::unordered_map<std::string, int> variables_ = {};
+  std::unordered_map<std::string, int> m_variables = {};
+  Stack m_stack = {};
 };
 
 class MIPSTranspiler::UnboundVariableException : public std::exception
@@ -180,25 +205,6 @@ public:
 
 private:
   std::string message = {};
-};
-
-class MIPSTranspiler::Stack
-{
-public:
-  constexpr void
-  push() noexcept
-  {
-    size_ += 4;
-  }
-
-  constexpr void
-  pop() noexcept
-  {
-    size_ -= 4;
-  }
-
-private:
-  int size_ = {};
 };
 
 }
