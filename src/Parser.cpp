@@ -23,40 +23,64 @@ Parser::peek() const noexcept
 }
 
 void
-Parser::consume(int line, TokenType type)
+Parser::error(int line, const std::string& msg) noexcept
 {
-  // TODO: synchronize
+  m_diagnostics.push_back({ line, msg });
+}
+
+void
+Parser::hint(const std::string& msg) noexcept
+{
+  m_diagnostics.push_back({ Diagnostic::Severity::HINT, msg });
+}
+
+void
+Parser::consume(int line, TokenType type, bool synchronize)
+{
   auto token{ advance() };
+
   if (!token.has_value())
     {
-      m_diagnostics.push_back({ line, "Unexpected end of file" });
-      return;
+      error(line, "Unexpected end of file");
+      if (synchronize)
+        throw SynchronizationPoint{};
+      else
+        return;
     }
 
   if (token->type() == type)
     return;
 
-  if (type == TokenType::END)
-    m_diagnostics.push_back({ token->line(), "Unexpected end of file" });
+  if (token->type() == TokenType::END)
+    error(token->line(), "Unexpected end of file");
   else
-    m_diagnostics.push_back({ token->line(), "Unexpected token '" + token->type_as_str() + "'" });
+    error(token->line(), "Unexpected token '" + token->type_as_str() + "'");
 
   if (type == TokenType::DOT)
-    {
-      m_diagnostics.push_back({ Diagnostic::Severity::HINT, "Statements must end with a '.'" });
-    }
+    hint("Statements must end with a '.'");
   else
-    m_diagnostics.push_back(
-        { Diagnostic::Severity::HINT, "A(n) " + token_type_as_str(type) + " was expected" });
+    hint("A(n) " + token_type_as_str(type) + " was expected");
+
+  if (synchronize)
+    throw SynchronizationPoint{};
+}
+
+void
+Parser::synchronize() noexcept
+{
+  while (peek().has_value() && peek()->type() != TokenType::END)
+    {
+      auto token{ advance() };
+      if (token->type() == TokenType::DOT)
+        return;
+    }
 }
 
 std::optional<Parser::PrefixParselet>
 Parser::get_prefix_parselet(TokenType type) noexcept
 {
   if (auto found{ m_prefix_parselets.find(type) }; found == m_prefix_parselets.end())
-    {
-      return std::nullopt;
-    }
+    return std::nullopt;
   return m_prefix_parselets[type];
 }
 
@@ -64,9 +88,7 @@ std::optional<Parser::InfixParselet>
 Parser::get_infix_parselet(TokenType type) noexcept
 {
   if (auto found{ m_infix_parselets.find(type) }; found == m_infix_parselets.end())
-    {
-      return std::nullopt;
-    }
+    return std::nullopt;
   return m_infix_parselets[type];
 }
 
@@ -78,35 +100,40 @@ Parser::Parse()
   auto token{ peek() };
   while (token.has_value() && token->type() != TokenType::END)
     {
-      auto stmt{ parse_stmt() };
-      if (stmt == nullptr)
+      try
         {
-          return nullptr;
+          if (auto stmt{ parse_stmt() }; stmt)
+            {
+              program->add_stmt(stmt);
+            }
         }
-      program->add_stmt(stmt);
+      catch (const SynchronizationPoint& sync)
+        {
+          synchronize();
+        }
       token = peek();
     }
 
-  consume(token->line(), TokenType::END);
+  if (token.has_value())
+    consume(token->line(), TokenType::END, false);
   return program;
 };
 
 Stmt*
 Parser::parse_stmt()
 {
-  auto token{ peek() };
-  if (!token.has_value())
-    return nullptr;
 
-  if (token->type() == TokenType::IDENTIFIER && token->lexeme() == "let")
+  if (auto token{ peek() }; token->type() == TokenType::IDENTIFIER && token->lexeme() == "let")
     {
       advance();
       return parse_let_stmt();
     }
-
-  auto expr{ parse_expr() };
-  consume(token->line(), TokenType::DOT);
-  return expr;
+  else
+    {
+      auto expr{ parse_expr() };
+      consume(token->line(), TokenType::DOT);
+      return expr;
+    }
 }
 
 LetStmt*
@@ -117,14 +144,18 @@ Parser::parse_let_stmt()
 
   if (identifier->token().type() != TokenType::IDENTIFIER)
     {
-      // TODO: synchronize
-      m_diagnostics.emplace_back(identifier->token().line(), "Expected identifier after let");
-      return nullptr;
+      error(identifier->token().line(), "Expected identifier after let");
+      throw SynchronizationPoint{};
     }
 
   auto value{ parse_expr() };
-  consume(value->token().line(), TokenType::DOT);
+  if (!value)
+    {
+      error(identifier->token().line(), "Expected value at right hand of let statement");
+      throw SynchronizationPoint{};
+    }
 
+  consume(value->token().line(), TokenType::DOT);
   return new LetStmt{ static_cast<Identifier*>(identifier), value };
 }
 
@@ -138,10 +169,8 @@ Parser::parse_expr(int precedence)
   auto prefix_parselet{ get_prefix_parselet(token->type()) };
   if (!prefix_parselet.has_value())
     {
-      // TODO: synchronize
-      m_diagnostics.emplace_back(token->line(),
-                                 "Invalid start of prefix expression: '" + token->lexeme() + "'");
-      return nullptr;
+      error(token->line(), "Invalid start of prefix expression: '" + token->lexeme() + "'");
+      throw SynchronizationPoint{};
     }
 
   auto lhs{ prefix_parselet.value()(*this, *token) };
@@ -152,10 +181,8 @@ Parser::parse_expr(int precedence)
       auto infix_parselet{ get_infix_parselet(next->type()) };
       if (!infix_parselet.has_value())
         {
-          // TODO: synchronize
-          m_diagnostics.emplace_back(next->line(),
-                                     "Invalid start of infix expression: '" + next->lexeme() + "'");
-          return nullptr;
+          error(next->line(), "Invalid start of infix expression: '" + next->lexeme() + "'");
+          throw SynchronizationPoint{};
         }
 
       lhs = infix_parselet.value()(*this, *next, lhs);
@@ -173,7 +200,6 @@ parse_integer(Parser& parser, Token token)
 Expr*
 parse_identifier(Parser& parser, Token token)
 {
-
   return new Identifier{ token };
 }
 

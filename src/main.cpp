@@ -15,6 +15,9 @@ repl()
   std::cout << "> ";
   while (std::getline(std::cin, line))
     {
+      if (line == ".quit")
+        break;
+
       std::cout << cat::transpile(line) << "\n";
       std::cout << "> ";
     }
@@ -58,9 +61,15 @@ main(int argc, char** argv)
       fin = std::fopen(*argv, "r");
     }
 
-  char line[100];
-  std::fgets(line, 100, fin);
-  std::fputs(cat::transpile(line).c_str(), fout);
+  char line[200];
+  std::string program{};
+
+  while (std::fgets(line, sizeof line, fin) != nullptr)
+    {
+      program += line;
+    }
+
+  std::fputs(cat::transpile(program).c_str(), fout);
 
   fclose(fout);
   fclose(fin);

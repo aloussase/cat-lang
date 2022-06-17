@@ -31,7 +31,7 @@ public:
   [[nodiscard]] std::string
   to_s() const noexcept override
   {
-    return "li " + reg_ + ", " + std::to_string(value_);
+    return "li    " + reg_ + ", " + std::to_string(value_);
   }
 
 private:
@@ -47,7 +47,7 @@ public:
   [[nodiscard]] std::string
   to_s() const noexcept override
   {
-    return "move " + r1_ + ", " + r2_;
+    return "move  " + r1_ + ", " + r2_;
   }
 
 private:
@@ -63,7 +63,7 @@ public:
   [[nodiscard]] std::string
   to_s() const noexcept override
   {
-    return "mflo " + r_;
+    return "mflo  " + r_;
   }
 
 private:
@@ -81,7 +81,7 @@ public:
   [[nodiscard]] std::string
   to_s() const noexcept override
   {
-    return "add " + rd_ + ", " + rs_ + ", " + rt_;
+    return "add   " + rd_ + ", " + rs_ + ", " + rt_;
   }
 
 private:
@@ -101,7 +101,7 @@ public:
   [[nodiscard]] std::string
   to_s() const noexcept override
   {
-    return "sub " + rd_ + ", " + rs_ + ", " + rt_;
+    return "sub   " + rd_ + ", " + rs_ + ", " + rt_;
   }
 
 private:
@@ -118,7 +118,7 @@ public:
   [[nodiscard]] std::string
   to_s() const noexcept override
   {
-    return "mult " + r1_ + ", " + r2_;
+    return "mult  " + r1_ + ", " + r2_;
   }
 
 private:
@@ -137,7 +137,7 @@ public:
   [[nodiscard]] std::string
   to_s() const noexcept override
   {
-    return "addi " + rd_ + ", " + rs_ + ", " + std::to_string(constant_);
+    return "addi  " + rd_ + ", " + rs_ + ", " + std::to_string(constant_);
   }
 
 private:
@@ -157,7 +157,7 @@ public:
   [[nodiscard]] std::string
   to_s() const noexcept override
   {
-    return "lw " + rs_ + ", " + std::to_string(offset_) + "(" + rd_ + ")";
+    return "lw    " + rs_ + ", " + std::to_string(offset_) + "(" + rd_ + ")";
   }
 
 private:
@@ -177,7 +177,7 @@ public:
   [[nodiscard]] std::string
   to_s() const noexcept override
   {
-    return "sw " + rs_ + ", " + std::to_string(offset_) + "(" + rd_ + ")";
+    return "sw    " + rs_ + ", " + std::to_string(offset_) + "(" + rd_ + ")";
   }
 
 private:

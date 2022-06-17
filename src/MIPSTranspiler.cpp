@@ -75,7 +75,7 @@ MIPSTranspiler::Transpile()
   emit("main:");
   if (m_program)
     m_program->Accept(*this);
-  emit("jr $ra");
+  emit("jr    $ra");
   return m_result;
 }
 
@@ -135,6 +135,7 @@ MIPSTranspiler::VisitIdentifier(ast::Identifier& identifier)
       hint += "\t let " + identifier.name() + " := <value>";
       m_diagnostics.push_back({ identifier.token().line(), Diagnostic::Severity::HINT, hint });
       // TODO: synchronize
+      // This will result in a std::bad_any exception being raised
       return {};
     }
 }

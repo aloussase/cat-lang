@@ -26,6 +26,10 @@ public:
   using PrefixParselet = std::function<ast::Expr*(Parser&, Token)>;
   using InfixParselet = std::function<ast::Expr*(Parser&, Token, ast::Expr*)>;
 
+  class SynchronizationPoint
+  {
+  };
+
   Parser(std::vector<Token> tokens, std::vector<Diagnostic>& diagnostics)
       : m_tokens{ tokens }, m_diagnostics{ diagnostics }
   {
@@ -64,11 +68,16 @@ private:
   std::optional<InfixParselet> get_infix_parselet(TokenType) noexcept;
 
   std::optional<Token> advance() noexcept;
-  std::optional<Token> peek() const noexcept;
-  void consume(int, TokenType);
+  [[nodiscard]] std::optional<Token> peek() const noexcept;
+  void consume(int, TokenType, bool synchronize = true);
+  void synchronize() noexcept;
+
+  void error(int, const std::string&) noexcept;
+  void hint(const std::string&) noexcept;
 
   std::vector<Token> m_tokens;
   std::vector<Diagnostic>& m_diagnostics;
+
   std::vector<Token>::size_type m_current = 0;
   std::unordered_map<TokenType, int> m_precedence = {};
   std::unordered_map<TokenType, PrefixParselet> m_prefix_parselets = {};
