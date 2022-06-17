@@ -14,7 +14,11 @@ public:
     HINT
   };
 
+  Diagnostic(const std::string& message) : Diagnostic{ 0, message } {}
+
   Diagnostic(int line, const std::string& message) : Diagnostic{ line, Severity::ERROR, message } {}
+
+  Diagnostic(Severity severity, const std::string& message) : Diagnostic{ 0, severity, message } {}
 
   Diagnostic(int line, Severity severity, const std::string& message)
       : m_line{ line }, m_severity{ severity }, m_message{ message }

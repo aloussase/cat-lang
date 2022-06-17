@@ -11,31 +11,24 @@ namespace cat
 std::string
 transpile(const std::string& source)
 {
-  try
-    {
-      std::vector<cat::Diagnostic> diagnostics{};
+  std::vector<cat::Diagnostic> diagnostics{};
 
-      auto tokens{ Lexer{ source, diagnostics }.Lex() };
+  auto tokens{ Lexer{ source, diagnostics }.Lex() };
 
 #ifdef DEBUG
-      for (const auto& token : tokens)
-        std::cout << token << "\n";
+  for (const auto& token : tokens)
+    std::cout << token << "\n";
 #endif
 
-      auto program{ Parser(tokens, diagnostics).Parse() };
-      auto result{ MIPSTranspiler(program.release()).Transpile() };
+  auto program{ Parser(tokens, diagnostics).Parse() };
+  auto result{ MIPSTranspiler(std::move(program), diagnostics).Transpile() };
 
-      for (const auto& diagnostic : diagnostics)
-        {
-          diagnostic.show();
-        }
-
-      return result;
-    }
-  catch (const std::exception& ex)
+  for (const auto& diagnostic : diagnostics)
     {
-      return ex.what();
+      diagnostic.show();
     }
+
+  return result;
 }
 
 }

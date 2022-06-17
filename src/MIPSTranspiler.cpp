@@ -16,22 +16,22 @@
 namespace cat
 {
 
-MIPSTranspiler::~MIPSTranspiler() { delete program_; }
+MIPSTranspiler::~MIPSTranspiler() { delete m_program; }
 
 register_t
 MIPSTranspiler::find_register() noexcept
 {
-  assert(!registers_.all());
+  assert(!m_registers.all());
 
   for (int register_number = register_t::min_value; register_number <= register_t::max_value;
        register_number++)
     {
-      if (int pos = register_number - register_t::min_value; !registers_.test(pos))
+      if (int pos = register_number - register_t::min_value; !m_registers.test(pos))
         {
 #ifdef DEBUG
           std::cout << "Giving register number " << pos << "\n";
 #endif
-          registers_ |= 1 << pos; // Mark the register as being used
+          m_registers |= 1 << pos; // Mark the register as being used
           return { register_number };
         }
     }
@@ -45,7 +45,7 @@ MIPSTranspiler::release_register(register_t reg)
 #ifdef DEBUG
   std::cout << "Releasing register " << (reg - register_t::min_value) << "\n";
 #endif
-  registers_ &= ~(1 << (reg - register_t::min_value));
+  m_registers &= ~(1 << (reg - register_t::min_value));
 }
 
 void
@@ -59,11 +59,11 @@ MIPSTranspiler::emit(const std::string& s) noexcept
 {
   if (auto newline{ s.rfind('\n') }; newline != std::string::npos)
     {
-      result_ += s;
+      m_result += s;
     }
   else
     {
-      result_ += s + "\n";
+      m_result += s + "\n";
     }
 }
 
@@ -73,10 +73,10 @@ MIPSTranspiler::Transpile()
   emit(".text");
   emit(".globl main");
   emit("main:");
-  if (program_)
-    program_->Accept(*this);
+  if (m_program)
+    m_program->Accept(*this);
   emit("jr $ra");
-  return result_;
+  return m_result;
 }
 
 std::any
@@ -129,7 +129,13 @@ MIPSTranspiler::VisitIdentifier(ast::Identifier& identifier)
     }
   else
     {
-      throw UnboundVariableException{ identifier.token().line(), identifier.name() };
+      m_diagnostics.emplace_back(identifier.token().line(),
+                                 "Unbound variable " + identifier.name());
+      std::string hint{ "Maybe you forgot to declare the variable?\n\n" };
+      hint += "\t let " + identifier.name() + " := <value>";
+      m_diagnostics.push_back({ identifier.token().line(), Diagnostic::Severity::HINT, hint });
+      // TODO: synchronize
+      return {};
     }
 }
 
@@ -183,5 +189,4 @@ MIPSTranspiler::VisitMultExpr(ast::MultExpr& expr)
   release_register(rhs);
   return lhs;
 }
-
 }

@@ -41,15 +41,13 @@ Parser::consume(int line, TokenType type)
   else
     m_diagnostics.push_back({ token->line(), "Unexpected token '" + token->type_as_str() + "'" });
 
-  // TODO: We dont use line numbers for hints, add a another constructor
   if (type == TokenType::DOT)
     {
-      m_diagnostics.push_back(
-          { token->line(), Diagnostic::Severity::HINT, "Statements must end with a '.'" });
+      m_diagnostics.push_back({ Diagnostic::Severity::HINT, "Statements must end with a '.'" });
     }
   else
-    m_diagnostics.push_back({ token->line(), Diagnostic::Severity::HINT,
-                              "A(n) " + token_type_as_str(type) + " was expected" });
+    m_diagnostics.push_back(
+        { Diagnostic::Severity::HINT, "A(n) " + token_type_as_str(type) + " was expected" });
 }
 
 std::optional<Parser::PrefixParselet>

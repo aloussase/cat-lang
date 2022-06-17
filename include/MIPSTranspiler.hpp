@@ -3,10 +3,13 @@
 #include <any>
 #include <bitset>
 #include <cassert>
+#include <memory>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include "ExprVisitor.hpp"
+#include "diagnostic.hpp"
 
 namespace cat
 {
@@ -130,11 +133,12 @@ private:
 class MIPSTranspiler final : public ExprVisitor
 {
 public:
-  MIPSTranspiler(ast::Node* program) : program_{ program } {}
+  MIPSTranspiler(std::unique_ptr<ast::Node> program, std::vector<Diagnostic>& diagnostics)
+      : m_program{ program.release() }, m_diagnostics{ diagnostics }
+  {
+  }
 
   ~MIPSTranspiler();
-
-  class UnboundVariableException;
 
   // TODO: Check for stack overflow.
   class Stack
@@ -182,29 +186,13 @@ private:
     emit(Inst(args...));
   }
 
-  ast::Node* program_;
-  std::string result_ = {};
-  std::bitset<register_t::size> registers_ = register_t::min_value;
+  ast::Node* m_program;
+  std::vector<Diagnostic>& m_diagnostics;
+
+  std::string m_result = {};
+  std::bitset<register_t::size> m_registers = register_t::min_value;
   std::unordered_map<std::string, int> m_variables = {};
   Stack m_stack = {};
-};
-
-class MIPSTranspiler::UnboundVariableException : public std::exception
-{
-public:
-  UnboundVariableException(int line, const std::string& msg)
-      : message{ "Unbound variable at line " + std::to_string(line) + ": " + msg }
-  {
-  }
-
-  const char*
-  what() const noexcept override
-  {
-    return message.c_str();
-  }
-
-private:
-  std::string message = {};
 };
 
 }
