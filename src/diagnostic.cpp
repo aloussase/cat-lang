@@ -17,13 +17,13 @@ Diagnostic::show() const noexcept
 void
 Diagnostic::show_error() const noexcept
 {
-  std::cout << "\033[31mError:\033[m" << m_line << ": " << m_message << "\n";
+  std::cout << "\033[31mError:\033[m" << m_line << ": " << m_message << "\n\n";
 }
 
 void
 Diagnostic::show_hint() const noexcept
 {
-  std::cout << "\033[34mHint:\033[m\n\t" << m_message << "\n";
+  std::cout << "\033[34mHint:\033[m\n\t" << m_message << "\n\n";
 }
 
 }

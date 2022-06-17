@@ -7,8 +7,8 @@
 #include <unordered_map>
 #include <vector>
 
-#include "ast.hpp"
 #include "Lexer.hpp"
+#include "ast.hpp"
 
 namespace cat
 {
@@ -23,31 +23,29 @@ ast::Expr* parse_binary_operator(Parser&, Token, ast::Expr*);
 class Parser
 {
 public:
-  class SyntaxError;
-
   using PrefixParselet = std::function<ast::Expr*(Parser&, Token)>;
   using InfixParselet = std::function<ast::Expr*(Parser&, Token, ast::Expr*)>;
 
-  Parser(std::vector<Token> tokens)
-      : tokens_{ tokens }, prefix_parselets_{}, infix_parselets_{}, precedence_{}
+  Parser(std::vector<Token> tokens, std::vector<Diagnostic>& diagnostics)
+      : m_tokens{ tokens }, m_diagnostics{ diagnostics }
   {
     // Register precedences
-    precedence_[TokenType::MINUS] = 1;
-    precedence_[TokenType::PLUS] = 1;
-    precedence_[TokenType::STAR] = 2;
-    precedence_[TokenType::NUMBER] = 3;
-    precedence_[TokenType::IDENTIFIER] = 3;
-    precedence_[TokenType::LPAREN] = 8;
+    m_precedence[TokenType::MINUS] = 1;
+    m_precedence[TokenType::PLUS] = 1;
+    m_precedence[TokenType::STAR] = 2;
+    m_precedence[TokenType::NUMBER] = 3;
+    m_precedence[TokenType::IDENTIFIER] = 3;
+    m_precedence[TokenType::LPAREN] = 8;
 
     // Register prefix parselets
-    prefix_parselets_[TokenType::NUMBER] = parse_integer;
-    prefix_parselets_[TokenType::IDENTIFIER] = parse_identifier;
-    prefix_parselets_[TokenType::LPAREN] = parse_grouping_expression;
+    m_prefix_parselets[TokenType::NUMBER] = parse_integer;
+    m_prefix_parselets[TokenType::IDENTIFIER] = parse_identifier;
+    m_prefix_parselets[TokenType::LPAREN] = parse_grouping_expression;
 
     // Register infix parselets
-    infix_parselets_[TokenType::PLUS] = parse_binary_operator;
-    infix_parselets_[TokenType::MINUS] = parse_binary_operator;
-    infix_parselets_[TokenType::STAR] = parse_binary_operator;
+    m_infix_parselets[TokenType::PLUS] = parse_binary_operator;
+    m_infix_parselets[TokenType::MINUS] = parse_binary_operator;
+    m_infix_parselets[TokenType::STAR] = parse_binary_operator;
   }
 
   std::unique_ptr<ast::Node> Parse();
@@ -67,31 +65,14 @@ private:
 
   std::optional<Token> advance() noexcept;
   std::optional<Token> peek() const noexcept;
-  void consume(TokenType);
+  void consume(int, TokenType);
 
-  int current_ = 0;
-  std::vector<Token> tokens_;
-  std::unordered_map<TokenType, int> precedence_;
-  std::unordered_map<TokenType, PrefixParselet> prefix_parselets_;
-  std::unordered_map<TokenType, InfixParselet> infix_parselets_;
-};
-
-class Parser::SyntaxError : public std::exception
-{
-public:
-  SyntaxError(int line, const std::string& msg)
-      : message{ "Syntax error at line " + std::to_string(line) + ": " + msg }
-  {
-  }
-
-  const char*
-  what() const noexcept override
-  {
-    return message.c_str();
-  }
-
-private:
-  std::string message{};
+  std::vector<Token> m_tokens;
+  std::vector<Diagnostic>& m_diagnostics;
+  std::vector<Token>::size_type m_current = 0;
+  std::unordered_map<TokenType, int> m_precedence = {};
+  std::unordered_map<TokenType, PrefixParselet> m_prefix_parselets = {};
+  std::unordered_map<TokenType, InfixParselet> m_infix_parselets = {};
 };
 
 }

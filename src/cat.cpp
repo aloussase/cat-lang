@@ -1,9 +1,9 @@
 #include <iostream>
 
-#include "cat.hpp"
 #include "Lexer.hpp"
 #include "MIPSTranspiler.hpp"
 #include "Parser.hpp"
+#include "cat.hpp"
 
 namespace cat
 {
@@ -14,6 +14,7 @@ transpile(const std::string& source)
   try
     {
       std::vector<cat::Diagnostic> diagnostics{};
+
       auto tokens{ Lexer{ source, diagnostics }.Lex() };
 
 #ifdef DEBUG
@@ -21,7 +22,7 @@ transpile(const std::string& source)
         std::cout << token << "\n";
 #endif
 
-      auto program{ Parser(tokens).Parse() };
+      auto program{ Parser(tokens, diagnostics).Parse() };
       auto result{ MIPSTranspiler(program.release()).Transpile() };
 
       for (const auto& diagnostic : diagnostics)

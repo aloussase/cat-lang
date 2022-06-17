@@ -73,7 +73,8 @@ MIPSTranspiler::Transpile()
   emit(".text");
   emit(".globl main");
   emit("main:");
-  program_->Accept(*this);
+  if (program_)
+    program_->Accept(*this);
   emit("jr $ra");
   return result_;
 }

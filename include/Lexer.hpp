@@ -70,8 +70,6 @@ public:
   {
   }
 
-  class InvalidTokenException;
-
   std::vector<Token> Lex();
 
 private:
@@ -84,29 +82,11 @@ private:
   char advance() noexcept;
   char peek() noexcept;
 
-  std::vector<Token> m_tokens = {};
-  std::vector<Diagnostic>& m_diagnostics;
   std::string m_source;
-  int m_current = 0;
+  std::vector<Diagnostic>& m_diagnostics;
+  std::vector<Token> m_tokens = {};
+  std::string::size_type m_current = 0;
   int m_line = 1;
-};
-
-class Lexer::InvalidTokenException : public std::exception
-{
-public:
-  InvalidTokenException(int line, const std::string& msg)
-  {
-    message = "Invalid token at line " + std::to_string(line) + ": " + msg;
-  }
-
-  const char*
-  what() const noexcept override
-  {
-    return message.c_str();
-  }
-
-private:
-  std::string message = {};
 };
 
 }
