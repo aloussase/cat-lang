@@ -2,4 +2,4 @@ BasedOnStyle: GNU
 SpaceBeforeParens: ControlStatements
 AlwaysBreakTemplateDeclarations: Yes
 PointerAlignment: Left
-ColumnLimit: 100
+ColumnLimit: 110

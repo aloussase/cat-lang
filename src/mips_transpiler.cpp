@@ -74,7 +74,15 @@ MIPSTranspiler::Transpile()
   emit(".globl main");
   emit("main:");
   if (m_program)
-    m_program->Accept(*this);
+    {
+      try
+        {
+          m_program->Accept(*this);
+        }
+      catch (const RuntimeException& ex)
+        {
+        }
+    }
   emit("jr    $ra");
   return m_result;
 }
@@ -129,14 +137,11 @@ MIPSTranspiler::VisitIdentifier(ast::Identifier& identifier)
     }
   else
     {
-      m_diagnostics.emplace_back(identifier.token().line(),
-                                 "Unbound variable " + identifier.name());
+      m_diagnostics.emplace_back(identifier.token().line(), "Unbound variable " + identifier.name());
       std::string hint{ "Maybe you forgot to declare the variable?\n\n" };
       hint += "\t let " + identifier.name() + " := <value>";
       m_diagnostics.push_back({ identifier.token().line(), Diagnostic::Severity::HINT, hint });
-      // TODO: synchronize
-      // This will result in a std::bad_any exception being raised
-      return {};
+      throw RuntimeException{};
     }
 }
 

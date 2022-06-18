@@ -140,6 +140,10 @@ public:
 
   ~MIPSTranspiler();
 
+  class RuntimeException
+  {
+  };
+
   // TODO: Check for stack overflow.
   class Stack
   {

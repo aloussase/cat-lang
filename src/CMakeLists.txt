@@ -1,8 +1,8 @@
 add_library(cat-lang
   ast.cpp
-  MIPSTranspiler.cpp
-  Lexer.cpp
-  Parser.cpp
+  mips_transpiler.cpp
+  lexer.cpp
+  parser.cpp
   diagnostic.cpp
   cat.cpp
 )
