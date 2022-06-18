@@ -220,29 +220,39 @@ parse_identifier(Parser& parser, Token token)
 }
 
 Expr*
-parse_binary_operator(Parser& parser, Token token, Expr* left)
+parse_binary_operator(Parser& parser, Token token, Expr* lhs)
 {
   switch (token.type())
     {
     case TokenType::PLUS:
       {
-        auto right{ parser.parse_expr(parser.m_precedence[TokenType::PLUS]) };
-        return new AddExpr{ token, left, right };
+        auto rhs{ parser.parse_expr(parser.m_precedence[TokenType::PLUS]) };
+        return new AddExpr{ token, lhs, rhs };
       }
       break;
     case TokenType::MINUS:
       {
-        auto right{ parser.parse_expr(parser.m_precedence[TokenType::MINUS]) };
-        return new SubExpr{ token, left, right };
+        auto rhs{ parser.parse_expr(parser.m_precedence[TokenType::MINUS]) };
+        return new SubExpr{ token, lhs, rhs };
       }
       break;
     case TokenType::STAR:
       {
-        auto right{ parser.parse_expr(parser.m_precedence[TokenType::STAR]) };
-        return new MultExpr{ token, left, right };
+        auto rhs{ parser.parse_expr(parser.m_precedence[TokenType::STAR]) };
+        return new MultExpr{ token, lhs, rhs };
       }
       break;
     case TokenType::WALRUS:
+      {
+        if (lhs->token().type() != TokenType::IDENTIFIER)
+          {
+            parser.error(lhs->token().line(), "Left side of assignment must be a variable.");
+            throw Parser::SynchronizationPoint{};
+          }
+        auto rhs{ parser.parse_expr() };
+        // TODO: implement AssignExpr to return it here
+        assert(false && "AssignExpr not implemented");
+      }
       break;
     default:
       assert(false && "Unhandled token type in parse_binary_operator");
