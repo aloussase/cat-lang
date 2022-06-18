@@ -175,10 +175,13 @@ Parser::parse_expr(int precedence)
 
   auto lhs{ prefix_parselet.value()(*this, *token) };
 
-  while (peek().has_value() && precedence < m_precedence[peek().value().type()])
+  // FIXME: When an operator does not have an infix parselet for it registered
+  //        a weird error about statements ending with a dot is shown.
+  while (peek().has_value() && precedence < m_precedence[peek()->type()])
     {
       auto next{ advance() };
       auto infix_parselet{ get_infix_parselet(next->type()) };
+
       if (!infix_parselet.has_value())
         {
           error(next->line(), "Invalid start of infix expression: '" + next->lexeme() + "'");
