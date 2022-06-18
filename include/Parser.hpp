@@ -34,11 +34,15 @@ public:
       : m_tokens{ tokens }, m_diagnostics{ diagnostics }
   {
     // Register precedences
-    m_precedence[TokenType::MINUS] = 1;
-    m_precedence[TokenType::PLUS] = 1;
-    m_precedence[TokenType::STAR] = 2;
-    m_precedence[TokenType::NUMBER] = 3;
-    m_precedence[TokenType::IDENTIFIER] = 3;
+
+    // These need to be treated specially
+    m_precedence[TokenType::NUMBER] = 0;
+    m_precedence[TokenType::IDENTIFIER] = 0;
+
+    m_precedence[TokenType::WALRUS] = 1;
+    m_precedence[TokenType::PLUS] = 2;
+    m_precedence[TokenType::MINUS] = 2;
+    m_precedence[TokenType::STAR] = 3;
     m_precedence[TokenType::LPAREN] = 8;
 
     // Register prefix parselets
@@ -50,6 +54,7 @@ public:
     m_infix_parselets[TokenType::PLUS] = parse_binary_operator;
     m_infix_parselets[TokenType::MINUS] = parse_binary_operator;
     m_infix_parselets[TokenType::STAR] = parse_binary_operator;
+    m_infix_parselets[TokenType::WALRUS] = parse_binary_operator;
   }
 
   std::unique_ptr<ast::Node> Parse();

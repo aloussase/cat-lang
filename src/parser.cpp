@@ -145,7 +145,8 @@ Parser::parse_let_stmt()
 
   try
     {
-      identifier = parse_expr();
+      // Do not parse the walrus during variable declaration.
+      identifier = parse_expr(m_precedence[TokenType::WALRUS] + 1);
       consume(identifier->token().line(), TokenType::WALRUS);
     }
   catch (const SynchronizationPoint& ex)
@@ -240,6 +241,8 @@ parse_binary_operator(Parser& parser, Token token, Expr* left)
         auto right{ parser.parse_expr(parser.m_precedence[TokenType::STAR]) };
         return new MultExpr{ token, left, right };
       }
+      break;
+    case TokenType::WALRUS:
       break;
     default:
       assert(false && "Unhandled token type in parse_binary_operator");
