@@ -33,9 +33,14 @@ transpile(const std::string& source, const std::string& file)
   std::cout << "transpiler finished\n";
 #endif
 
+  if (diagnostics.size() == 0)
+    return result;
+
+  result.clear();
+
   for (const auto& diagnostic : diagnostics)
     {
-      diagnostic.show(file);
+      result += diagnostic.format(file);
     }
 
   return result;

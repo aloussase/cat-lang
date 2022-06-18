@@ -26,13 +26,18 @@ public:
   }
 
   /**
+   * Format this diagnostic and return the result as a string.
+   */
+  std::string format(const std::string& file = "<repl>") const noexcept;
+
+  /**
    * Display this diagnostic.
    */
   void show(const std::string& file = "<repl>") const noexcept;
 
 private:
-  void show_error() const noexcept;
-  void show_hint() const noexcept;
+  std::string format_error() const noexcept;
+  std::string format_hint() const noexcept;
 
   mutable std::string m_file = "<repl>";
   int m_line = {};
