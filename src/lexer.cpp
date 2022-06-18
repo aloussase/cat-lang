@@ -127,8 +127,7 @@ Lexer::is_at_end() const noexcept
 bool
 Lexer::is_identifier_character(char c) const noexcept
 {
-  return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_'
-         || c == '/';
+  return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '/';
 }
 
 char

@@ -48,6 +48,8 @@ Parser::consume(int line, TokenType type, bool synchronize)
         return;
     }
 
+  assert(token.has_value());
+
   if (token->type() == type)
     return;
 
@@ -139,8 +141,18 @@ Parser::parse_stmt()
 LetStmt*
 Parser::parse_let_stmt()
 {
-  auto identifier{ parse_expr() };
-  consume(identifier->token().line(), TokenType::WALRUS);
+  Expr* identifier = nullptr;
+
+  try
+    {
+      identifier = parse_expr();
+      consume(identifier->token().line(), TokenType::WALRUS);
+    }
+  catch (const SynchronizationPoint& ex)
+    {
+      hint("Maybe you meant to use the walrus operator ':='?");
+      throw ex;
+    }
 
   if (identifier->token().type() != TokenType::IDENTIFIER)
     {
