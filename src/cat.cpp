@@ -9,7 +9,7 @@ namespace cat
 {
 
 std::string
-transpile(const std::string& source)
+transpile(const std::string& source, const std::string& file)
 {
   std::vector<cat::Diagnostic> diagnostics{};
 
@@ -35,7 +35,7 @@ transpile(const std::string& source)
 
   for (const auto& diagnostic : diagnostics)
     {
-      diagnostic.show();
+      diagnostic.show(file);
     }
 
   return result;

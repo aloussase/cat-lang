@@ -28,12 +28,13 @@ public:
   /**
    * Display this diagnostic.
    */
-  void show() const noexcept;
+  void show(const std::string& file = "<repl>") const noexcept;
 
 private:
   void show_error() const noexcept;
   void show_hint() const noexcept;
 
+  mutable std::string m_file = "<repl>";
   int m_line = {};
   Severity m_severity;
   std::string m_message = {};

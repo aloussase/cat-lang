@@ -32,6 +32,8 @@ main(int argc, char** argv)
   argc--;
   argv++;
 
+  std::string filename{};
+
   if (argc == 0)
     {
       repl();
@@ -47,6 +49,7 @@ main(int argc, char** argv)
         }
       else if (!std::strcmp(*argv, "-"))
         {
+          filename = "stdin";
           fin = stdin;
         }
       else
@@ -58,6 +61,7 @@ main(int argc, char** argv)
   auto nargs{ argc - i };
   if (nargs > 0)
     {
+      filename = *argv;
       fin = std::fopen(*argv, "r");
     }
 
@@ -69,7 +73,7 @@ main(int argc, char** argv)
       program += line;
     }
 
-  std::fputs(cat::transpile(program).c_str(), fout);
+  std::fputs(cat::transpile(program, filename).c_str(), fout);
 
   fclose(fout);
   fclose(fin);
