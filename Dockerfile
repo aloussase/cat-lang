@@ -5,8 +5,8 @@ RUN apt-get install -y libboost-all-dev
 
 WORKDIR /app
 COPY . .
-RUN cmake -S . -B ./build && cmake --build ./build --target web --config Release
+RUN cmake -S . -B ./build -DCMAKE_BUILD_TYPE=Release && cmake --build ./build --target cat-api
 
 EXPOSE 8080
 
-CMD ./build/web/web
+CMD ./build/api/cat-api

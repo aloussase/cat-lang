@@ -1,5 +1,0 @@
-@media screen and (max-width: 480px) {
-    main { width: 90%; }
-    h1 { font-size: 1.5rem; }
-    #transpilation-form textarea { height: 300px; }
-}
