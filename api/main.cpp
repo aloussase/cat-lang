@@ -9,7 +9,11 @@
 int
 main()
 {
-  crow::SimpleApp app;
+  // crow::SimpleApp app;
+  crow::App<crow::CORSHandler> app;
+
+  auto cors{ app.get_middleware<crow::CORSHandler>() };
+  cors.global().methods(crow::HTTPMethod::POST).origin("*");
 
   CROW_ROUTE(app, "/api/v1/transpilation").methods(crow::HTTPMethod::POST)([](const crow::request& req) {
     if (auto body{ crow::json::load(req.body) }; body && body.has("data"))
