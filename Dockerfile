@@ -7,6 +7,7 @@ WORKDIR /app
 COPY . .
 RUN cmake -S . -B ./build -DCMAKE_BUILD_TYPE=Release && cmake --build ./build --target cat-api
 
-EXPOSE 8080
+ENV PORT=8080
+EXPOSE ${PORT}
 
 CMD ./build/api/cat-api
