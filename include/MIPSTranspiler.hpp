@@ -175,6 +175,7 @@ public:
   std::any VisitAddExpr(ast::AddExpr&) override;
   std::any VisitSubExpr(ast::SubExpr&) override;
   std::any VisitMultExpr(ast::MultExpr&) override;
+  std::any VisitAssignExpr(ast::AssignExpr&) override;
 
 private:
   [[nodiscard]] register_t find_register() noexcept;
@@ -189,6 +190,8 @@ private:
   {
     emit(Inst(args...));
   }
+
+  void require_variable_declared(ast::Identifier&) const;
 
   ast::Node* m_program;
   std::vector<Diagnostic>& m_diagnostics;

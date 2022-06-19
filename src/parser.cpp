@@ -250,8 +250,7 @@ parse_binary_operator(Parser& parser, Token token, Expr* lhs)
             throw Parser::SynchronizationPoint{};
           }
         auto rhs{ parser.parse_expr() };
-        // TODO: implement AssignExpr to return it here
-        assert(false && "AssignExpr not implemented");
+        return new AssignExpr{ token, lhs, rhs };
       }
       break;
     default:

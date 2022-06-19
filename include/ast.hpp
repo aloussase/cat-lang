@@ -25,6 +25,7 @@ class BinaryExpr;
 class AddExpr;
 class SubExpr;
 class MultExpr;
+class AssignExpr;
 
 // Node
 class Node
@@ -190,6 +191,15 @@ class MultExpr final : public BinaryExpr
 {
 public:
   MultExpr(Token token, Expr* lhs, Expr* rhs) : BinaryExpr{ token, lhs, rhs } {}
+
+  std::any Accept(ExprVisitor&) override;
+};
+
+// AssignExpr x := y
+class AssignExpr final : public BinaryExpr
+{
+public:
+  AssignExpr(Token token, Expr* lhs, Expr* rhs) : BinaryExpr{ token, lhs, rhs } {}
 
   std::any Accept(ExprVisitor&) override;
 };

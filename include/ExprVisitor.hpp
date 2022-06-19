@@ -16,6 +16,7 @@ class Identifier;
 class AddExpr;
 class SubExpr;
 class MultExpr;
+class AssignExpr;
 }
 
 /**
@@ -35,6 +36,7 @@ public:
   virtual std::any VisitAddExpr(cat::ast::AddExpr&) = 0;
   virtual std::any VisitSubExpr(cat::ast::SubExpr&) = 0;
   virtual std::any VisitMultExpr(cat::ast::MultExpr&) = 0;
+  virtual std::any VisitAssignExpr(cat::ast::AssignExpr&) = 0;
 };
 
 }

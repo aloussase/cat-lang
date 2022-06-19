@@ -67,6 +67,19 @@ MIPSTranspiler::emit(const std::string& s) noexcept
     }
 }
 
+void
+MIPSTranspiler::require_variable_declared(ast::Identifier& identifier) const
+{
+  if (auto offset = m_variables.find(identifier.name()); offset == m_variables.end())
+    {
+      m_diagnostics.emplace_back(identifier.token().line(), "Unbound variable " + identifier.name());
+      std::string hint{ "Maybe you forgot to declare the variable?\n\n" };
+      hint += "\t let " + identifier.name() + " := <value>";
+      m_diagnostics.push_back({ identifier.token().line(), Diagnostic::Severity::HINT, hint });
+      throw RuntimeException{};
+    }
+}
+
 std::string
 MIPSTranspiler::Transpile()
 {
@@ -129,20 +142,11 @@ MIPSTranspiler::VisitNumber(ast::Number& expr)
 std::any
 MIPSTranspiler::VisitIdentifier(ast::Identifier& identifier)
 {
-  if (auto offset = m_variables.find(identifier.name()); offset != m_variables.end())
-    {
-      auto rs{ find_register() };
-      emit<Instruction::LW>(rs, m_variables[identifier.name()], register_t{ register_t::name::SP });
-      return rs;
-    }
-  else
-    {
-      m_diagnostics.emplace_back(identifier.token().line(), "Unbound variable " + identifier.name());
-      std::string hint{ "Maybe you forgot to declare the variable?\n\n" };
-      hint += "\t let " + identifier.name() + " := <value>";
-      m_diagnostics.push_back({ identifier.token().line(), Diagnostic::Severity::HINT, hint });
-      throw RuntimeException{};
-    }
+  require_variable_declared(identifier);
+
+  auto rs{ find_register() };
+  emit<Instruction::LW>(rs, m_variables[identifier.name()], register_t{ register_t::name::SP });
+  return rs;
 }
 
 std::any
@@ -195,4 +199,20 @@ MIPSTranspiler::VisitMultExpr(ast::MultExpr& expr)
   release_register(rhs);
   return lhs;
 }
+
+std::any
+MIPSTranspiler::VisitAssignExpr(ast::AssignExpr& expr)
+{
+  auto identifier{ static_cast<ast::Identifier*>(expr.lhs()) };
+
+  require_variable_declared(*identifier);
+
+  auto offset{ m_variables[identifier->name()] };
+  auto rs{ AS_REGISTER(expr.rhs()->Accept(*this)) };
+
+  emit<Instruction::SW>(rs, offset, register_t{ register_t::name::SP });
+
+  return rs;
+}
+
 }

@@ -99,6 +99,12 @@ MultExpr::Accept(ExprVisitor& visitor)
   return visitor.VisitMultExpr(*this);
 }
 
+std::any
+AssignExpr::Accept(ExprVisitor& visitor)
+{
+  return visitor.VisitAssignExpr(*this);
+}
+
 } // namespace ast
 
 }
