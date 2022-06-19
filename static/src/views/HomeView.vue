@@ -1,6 +1,5 @@
 <script setup>
  import { ref } from 'vue';
- import ForkMe from '@/components/ForkMe.vue';
 
  const transpilationInput = ref("1 + 2.");
  const transpilationOutput = ref("");
@@ -9,72 +8,54 @@
  {
      fetch(`http://cat-lang.herokuapp.com/api/v1/transpilation`, {
          method: "POST",
-         headers: {
-             "Content-Type": "application/json"
-         },
+         headers: {"Content-Type": "application/json"},
          body: JSON.stringify({data: transpilationInput})
-     })
-     .then(json => JSON.parse(json))
-     .then(result => transpilationOuput.value = result)
-     .catch(error => console.log(error));
+     }).then(json => JSON.parse(json))
+       .then(result => transpilationOuput.value = result)
+       .catch(error => console.log(error));
  }
 </script>
 
 <template>
     <main>
-        <ForkMe />
-        <h1>Try Cat!</h1>
-        <section id="transpilation-input">
-            <form id="transpilation-form">
-                <textarea autofocus v-model="transpilationInput"></textarea>
-                <input type="submit" value="Run"  @click.prevent="transpile" />
-            </form>
-        </section>
-        <section id="transpilation-output">
-            {{ transpilationOutput }}
-        </section>
+        <div id="toolbar" class="main-item">
+            <button id="run-btn" @click="transpile">
+                RUN
+                <font-awesome-icon icon="fa-solid fa-play" />
+            </button>
+        </div>
+
+        <div id="transpilation-input" class="main-item">
+            <textarea autofocus v-model="transpilationInput"></textarea>
+        </div>
+
+        <div id="transpilation-output" v-if="transpilationOutput != ''" class="main-item">
+            <span id="transpilation-output-header">Transpilation</span>
+            <pre id="transpilation-output-output"><code>{{ transpilationOutput }}</code></pre>
+        </div>
+
     </main>
-    <footer>
-        <small>&#169; Alexander Goussas 2022</small>
-    </footer>
 </template>
 
 <style scoped>
- @import url('https://fonts.googleapis.com/css2?family=Raleway&family=VT323&display=swap');
-
- * {
-     margin: 0;
-     padding: 0;
-     box-sizing: border-box;
- }
-
- body {
-     font-family: 'Raleway', sans-serif;
- }
-
  main {
      display: flex;
      flex-direction: column;
-     align-items: center;
-     justify-content: center;
-     min-height: 100vh;
-     width: 80%;
-     margin: auto;
+     padding: 0 1rem;
  }
 
- h1 {
-     margin: 1rem 0;
+ .main-item {
+     padding: 0.5rem 0;
  }
 
- #transpilation-form {
+ toolbar {
      display: flex;
-     flex-direction: column;
-     width: 100%;
  }
 
- #transpilation-form input[type=submit] {
-     padding: 0.5rem;
+ #toolbar button {
+     padding: 0.8rem;
      background-color:white;
+     font-weight: bold;
      color: black;
      margin-top: 0.5rem;
      border-radius: 5px;
@@ -82,46 +63,37 @@
      cursor: pointer;
  }
 
- #transpilation-form input[type=submit]:hover {
+ #toolbar button:hover {
      background-color: #eee;
  }
 
 
- #transpilation-form textarea {
+ #transpilation-input textarea {
      padding: 1rem;
-     background-color: #000;
-     color: #00ff00;
-     font-size: 1.2rem;
      border-radius: 5px;
-     resize: none;
-     font-family: 'VT323', monospace;
-     height: 300px;
-     width: 600px;
- }
-
- #transpilation-result {
-     margin-top: 1rem;
-     padding: 0.5rem;
-     background: gray;
+     resize: vertical;
+     height: 200px;
      width: 100%;
  }
 
- #transpilation-error {
-     color: red;
- }
-
- /* Footer */
- footer {
+ #transpilation-output {
+     width: 100%;
      display: flex;
-     justify-content: center;
-     padding: 0.8rem;
+     flex-direction: column;
+     align-items: center;
+     border: 1px solid #bbb;
+     padding: 0.5rem;
  }
 
- /* media queries */
-@media screen and (max-width: 480px) {
-    main { width: 90%; }
-    h1 { font-size: 1.5rem; }
-    #transpilation-form textarea { height: 300px; }
-}
+ #transpilation-output-header {
+     border-bottom: 1px solid #bbb;
+     text-align: center;
+     padding-bottom: 0.5rem;
+     margin-bottom: 0.5rem;
+     width: 100%;
+ }
 
+ #transpilation-output-output {
+     width: 100%;
+ }
 </style>

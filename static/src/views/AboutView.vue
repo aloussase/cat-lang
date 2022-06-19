@@ -1,8 +1,23 @@
 <template>
-  <div class="about">
-    <h1>This is an about page</h1>
+  <div id="about">
+      <p>
+          Cat is simple programming language that transpiles to MIPS assembly.
+      </p>
+      <p>
+          Try entering some commands in the editor to see what happens.
+          Cat took inspiration on Rust and Jakt for good error reporting, so you
+          can learn the language by making mistakes!
+      </p>
   </div>
 </template>
 
-<style>
+<style scoped>
+ #about {
+     width: 60%;
+     margin: auto;
+ }
+
+ #about p {
+     padding: 1rem 0;
+ }
 </style>
