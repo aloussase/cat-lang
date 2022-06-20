@@ -19,7 +19,7 @@
 
  function transpile()
  {
-     fetch(`http://cat-lang.herokuapp.com/api/v1/transpilation`, {
+     fetch(`https://cat-lang.herokuapp.com/api/v1/transpilation`, {
          method: "POST",
          headers: {"Content-Type": "application/json" },
          body: JSON.stringify({data: transpilationInput.value})
