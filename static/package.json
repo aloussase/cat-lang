@@ -12,11 +12,14 @@
     "@fortawesome/free-regular-svg-icons": "^6.1.1",
     "@fortawesome/free-solid-svg-icons": "^6.1.1",
     "@fortawesome/vue-fontawesome": "^3.0.1",
+    "@highlightjs/vue-plugin": "^2.1.0",
+    "highlight.js": "^11.5.1",
     "vue": "^3.2.36",
     "vue-router": "^4.0.15"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^2.3.3",
+    "sass": "^1.52.3",
     "vite": "^2.9.9"
   }
 }

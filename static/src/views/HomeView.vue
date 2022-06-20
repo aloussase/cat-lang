@@ -4,16 +4,29 @@
  const transpilationInput = ref("1 + 2.");
  const transpilationOutput = ref("");
 
+ function htmlEntities(s)
+ {
+     return s.replaceAll("<", "&lt").replaceAll(">", "&gt");
+ }
+
+ function preprocessOutput(s)
+ {
+     return htmlEntities(s)
+         .replaceAll(/\[31m/g, "<span style='color: red; font-weight: bold;'>")
+         .replaceAll(/\[34m/g, "<span style='color: cyan; font-weight: bold;'>")
+         .replaceAll(/\[m/g, "</span>");
+ }
+
  function transpile()
  {
      fetch(`http://cat-lang.herokuapp.com/api/v1/transpilation`, {
          method: "POST",
-         headers: {
-            "Content-Type": "application/json"
-         },
+         headers: {"Content-Type": "application/json" },
          body: JSON.stringify({data: transpilationInput.value})
      }).then(response => response.json())
-       .then(result => transpilationOutput.value = result.data)
+       .then(result => {
+           transpilationOutput.value = preprocessOutput(result.data);
+       })
        .catch(error => console.log(error));
  }
 </script>
@@ -27,55 +40,57 @@
             </button>
         </div>
 
-        <div id="transpilation-input" class="main-item">
-            <textarea autofocus v-model="transpilationInput"></textarea>
+        <div id="transpilation-input" class="main-item" >
+            <textarea v-model="transpilationInput" />
         </div>
 
-        <div id="transpilation-output" v-if="transpilationOutput != ''" class="main-item">
+        <div id="transpilation-output" class="main-item">
             <span id="transpilation-output-header">Transpilation</span>
-            <pre id="transpilation-output-output"><code>{{ transpilationOutput }}</code></pre>
+            <pre id="transpilation-output-output"><code v-html="transpilationOutput"></code></pre>
         </div>
 
     </main>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
  main {
      display: flex;
      flex-direction: column;
      padding: 0 1rem;
+
+     & > div {
+         padding: 0.5rem 0;
+     }
  }
 
- .main-item {
-     padding: 0.5rem 0;
- }
-
- toolbar {
+ #toolbar {
      display: flex;
+
+     button {
+         padding: 0.8rem;
+         color: white;
+         background-color: #b7372b;
+         font-weight: bold;
+         margin-top: 0.5rem;
+         border: none;
+         border-radius: 5px;
+         transition: all 0.2s;
+         cursor: pointer;
+
+         &:hover {
+             background-color: #95372b;
+         }
+     }
  }
 
- #toolbar button {
-     padding: 0.8rem;
-     background-color:white;
-     font-weight: bold;
-     color: black;
-     margin-top: 0.5rem;
-     border-radius: 5px;
-     transition: all 0.2s;
-     cursor: pointer;
- }
-
- #toolbar button:hover {
-     background-color: #eee;
- }
-
-
- #transpilation-input textarea {
-     padding: 1rem;
-     border-radius: 5px;
-     resize: vertical;
-     height: 200px;
-     width: 100%;
+ #transpilation-input {
+     textarea {
+         padding: 1rem;
+         border-radius: 5px;
+         resize: none;
+         height: 200px;
+         width: 100%;
+     }
  }
 
  #transpilation-output {
@@ -84,18 +99,21 @@
      flex-direction: column;
      align-items: center;
      border: 1px solid #bbb;
+     background-color: white;
      padding: 0.5rem;
- }
 
- #transpilation-output-header {
-     border-bottom: 1px solid #bbb;
-     text-align: center;
-     padding-bottom: 0.5rem;
-     margin-bottom: 0.5rem;
-     width: 100%;
- }
+     span {
+         border-bottom: 1px solid #bbb;
+         text-align: center;
+         padding-bottom: 0.5rem;
+         margin-bottom: 0.5rem;
+         width: 100%;
+     }
 
- #transpilation-output-output {
-     width: 100%;
+     pre {
+         width: 100%;
+         height: 200px;
+         overflow-y:auto;
+     }
  }
 </style>

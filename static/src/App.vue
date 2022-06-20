@@ -27,6 +27,7 @@
 
  body {
      font-family: 'Raleway', sans-serif;
+     background-color:  #fdf5e7;
  }
 
  nav {
@@ -43,6 +44,10 @@
  }
 
  nav a:hover {
+     text-decoration: underline;
+ }
+
+ .router-link-active {
      text-decoration: underline;
  }
 </style>
