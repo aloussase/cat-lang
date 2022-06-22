@@ -148,21 +148,14 @@ public:
   class Stack
   {
   public:
-    constexpr int
-    push() noexcept
-    {
-      size_ += 4;
-      return size_ - 4;
-    }
+    Stack(MIPSTranspiler& transpiler) : m_transpiler{ transpiler } {}
 
-    constexpr void
-    pop() noexcept
-    {
-      size_ -= 4;
-    }
+    int push() noexcept;
+    void pop() noexcept;
 
   private:
     int size_ = {};
+    MIPSTranspiler& m_transpiler;
   };
 
   std::string Transpile();
@@ -199,7 +192,7 @@ private:
   std::string m_result = {};
   std::bitset<register_t::size> m_registers = register_t::min_value;
   std::unordered_map<std::string, int> m_variables = {};
-  Stack m_stack = {};
+  Stack m_stack = { *this };
 };
 
 }

@@ -18,6 +18,21 @@ namespace cat
 
 MIPSTranspiler::~MIPSTranspiler() { delete m_program; }
 
+int
+MIPSTranspiler::Stack::push() noexcept
+{
+  size_ += 4;
+  register_t stack_register{ register_t{ register_t::name::SP } };
+  m_transpiler.emit<Instruction::ADDI>(stack_register, stack_register, 4);
+  return size_ - 4;
+}
+
+void
+MIPSTranspiler::Stack::pop() noexcept
+{
+  size_ -= 4;
+}
+
 register_t
 MIPSTranspiler::find_register() noexcept
 {
