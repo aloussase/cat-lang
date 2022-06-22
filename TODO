@@ -1,0 +1,2 @@
+[ ] Fix let 'x := 12' not incrementing the stack pointer
+[ ] Add copy to clipboard button

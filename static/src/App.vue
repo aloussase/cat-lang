@@ -12,7 +12,7 @@
             </nav>
         </div>
     </header>
-    <ForkMe />
+    <ForkMe user="aloussase" repo="cat-lang" />
     <RouterView />
 </template>
 
