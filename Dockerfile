@@ -1,7 +1,6 @@
 FROM ubuntu:latest AS build
 
-RUN apt-get update && apt-get install -y cmake g++
-RUN apt-get install -y libboost-all-dev
+RUN apt-get update && apt-get install -y cmake g++ libboost-all-dev
 
 WORKDIR /app
 COPY . .
