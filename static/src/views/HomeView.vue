@@ -1,6 +1,8 @@
 <script setup>
  import { ref } from 'vue';
+ import PopupNotification from '@/components/PopupNotification.vue'
 
+ const showClipboardCopiedNotification = ref(false)
  const transpilationInput = ref("1 + 2.");
  const transpilationOutput = ref("");
 
@@ -12,9 +14,28 @@
  function preprocessOutput(s)
  {
      return htmlEntities(s)
-         .replaceAll(/\[31m/g, "<span style='color: red; font-weight: bold;'>")
-         .replaceAll(/\[34m/g, "<span style='color: cyan; font-weight: bold;'>")
-         .replaceAll(/\[m/g, "</span>");
+         .replace(/\[31m/g, "<span style='color: red; font-weight: bold;'>")
+         .replace(/\[34m/g, "<span style='color: cyan; font-weight: bold;'>")
+         .replace(/\[m/g, "</span>")
+         .replace(/[^-a-zA-Z0-9\<\>\n\[\]=:';\/&.$, ]/g, '');
+ }
+
+ function copyToClipboard(nodeCoords, extractorFn)
+ {
+     const node = document.querySelector(nodeCoords)
+     navigator.clipboard.writeText(extractorFn(node))
+     showClipboardCopiedNotification.value = true
+     setTimeout(() => showClipboardCopiedNotification.value = false, 1000)
+ }
+
+ function copyMIPS()
+ {
+     copyToClipboard("#transpilation-output-output code", node => node.innerText)
+ }
+
+ function copySRC()
+ {
+     copyToClipboard("#transpilation-input textarea", node => node.value)
  }
 
  function transpile()
@@ -24,24 +45,28 @@
          headers: {"Content-Type": "application/json" },
          body: JSON.stringify({data: transpilationInput.value})
      }).then(response => response.json())
-       .then(result => {
-           transpilationOutput.value = preprocessOutput(result.data);
-       })
+       .then(result => transpilationOutput.value = preprocessOutput(result.data))
        .catch(error => console.log(error));
  }
 </script>
 
 <template>
+    <PopupNotification content="Copied!" :showing="showClipboardCopiedNotification" />
     <main>
         <div id="toolbar" class="main-item">
-            <button id="run-btn" @click="transpile">
-                RUN
-                <font-awesome-icon icon="fa-solid fa-play" />
+            <button id="run-btn" @click="transpile" title="Ctrl + Enter">
+                RUN <font-awesome-icon icon="fa-solid fa-play" />
+            </button>
+            <button id="clip-src-btn" @click="copySRC">
+                Copy Source <font-awesome-icon icon="fa-solid fa-clipboard" />
+            </button>
+            <button id="clip-mips-btn" @click="copyMIPS">
+                Copy MIPS <font-awesome-icon icon="fa-solid fa-clipboard" />
             </button>
         </div>
 
         <div id="transpilation-input" class="main-item" >
-            <textarea v-model="transpilationInput" />
+            <textarea v-model="transpilationInput" @keyup.ctrl.enter="transpile" spellcheck="false" />
         </div>
 
         <div id="transpilation-output" class="main-item">
@@ -68,6 +93,7 @@
 
      button {
          padding: 0.8rem;
+         margin: 0 0.2rem;
          color: white;
          background-color: #b7372b;
          font-weight: bold;
