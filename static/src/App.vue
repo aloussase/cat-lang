@@ -31,8 +31,10 @@
  }
 
  nav {
-     padding: 1rem;
-     width: 100%;
+     position: fixed;
+     top: 10px;
+     left: 50%;
+     transform: translateX(-50%);
      display: flex;
      justify-content: center;
  }

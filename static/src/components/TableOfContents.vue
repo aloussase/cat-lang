@@ -17,9 +17,9 @@
 <style lang="scss" scope>
  ul {
      position: fixed;
-     left: 0;
      top: 0;
-     min-height: 100vh;
+     left: 0;
+     bottom: 0;
      background-color: white;
      padding: 1rem 2rem 0 0.5rem;
      list-style: none;

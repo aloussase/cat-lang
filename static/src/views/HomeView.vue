@@ -3,6 +3,7 @@
  import PopupNotification from '@/components/PopupNotification.vue'
 
  const showClipboardCopiedNotification = ref(false)
+ const loading = ref(false)
  const transpilationInput = ref("1 + 2.");
  const transpilationOutput = ref("");
 
@@ -17,7 +18,7 @@
          .replace(/\[31m/g, "<span style='color: red; font-weight: bold;'>")
          .replace(/\[34m/g, "<span style='color: cyan; font-weight: bold;'>")
          .replace(/\[m/g, "</span>")
-         .replace(/[^-a-zA-Z0-9\<\>\n\[\]=:';\/&.$, ]/g, '');
+         .replace(/[^-a-zA-Z0-9\<\>\n\[\]=:';\/&.$,? ]/g, '');
  }
 
  function copyToClipboard(nodeCoords, extractorFn)
@@ -40,13 +41,21 @@
 
  function transpile()
  {
+     loading.value = true;
+
      fetch(`https://cat-lang.herokuapp.com/api/v1/transpilation`, {
          method: "POST",
          headers: {"Content-Type": "application/json" },
          body: JSON.stringify({data: transpilationInput.value})
      }).then(response => response.json())
-       .then(result => transpilationOutput.value = preprocessOutput(result.data))
-       .catch(error => console.log(error));
+       .then(result => {
+           transpilationOutput.value = preprocessOutput(result.data)
+           loading.value = false;
+       })
+       .catch(error => {
+           console.log(error)
+           loading.value = false;
+       });
  }
 </script>
 
@@ -63,6 +72,7 @@
             <button id="clip-mips-btn" @click="copyMIPS">
                 Copy MIPS <font-awesome-icon icon="fa-solid fa-clipboard" />
             </button>
+            <img v-show="loading" src="https://bison.usgs.gov/images/spinner2.gif" width="40" height="40" />
         </div>
 
         <div id="transpilation-input" class="main-item" >
@@ -90,6 +100,7 @@
 
  #toolbar {
      display: flex;
+     align-items: center;
 
      button {
          padding: 0.8rem;
