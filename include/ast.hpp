@@ -18,6 +18,7 @@ class Node;
 class Program;
 class Stmt;
 class LetStmt;
+class IfStmt;
 class Expr;
 class Identifier;
 class Number;
@@ -33,13 +34,13 @@ class Node
 public:
   virtual ~Node() noexcept{};
 
-  virtual std::any Accept(ExprVisitor&) = 0;
+  virtual std::any Accept(NodeVisitor&) = 0;
 };
 
 class Stmt : public Node
 {
 public:
-  std::any Accept(ExprVisitor&) override;
+  std::any Accept(NodeVisitor&) override;
 };
 
 class Program final : public Node
@@ -53,7 +54,7 @@ public:
       delete stmt;
   }
 
-  std::any Accept(ExprVisitor&) override;
+  std::any Accept(NodeVisitor&) override;
 
   void add_stmt(Stmt* stmt) noexcept;
   [[nodiscard]] std::vector<Stmt*> stmts() const noexcept;
@@ -69,7 +70,7 @@ public:
 
   ~LetStmt();
 
-  std::any Accept(ExprVisitor&) override;
+  std::any Accept(NodeVisitor&) override;
 
   [[nodiscard]] const Identifier& identifier() const noexcept;
   [[nodiscard]] Expr& value() const noexcept;
@@ -77,6 +78,42 @@ public:
 private:
   Identifier* identifier_;
   Expr* value_;
+};
+
+class IfStmt final : public Stmt
+{
+public:
+  IfStmt(Expr* condition, std::vector<Stmt*> if_branch, std::vector<Stmt*> else_branch)
+      : m_condition{ condition }, m_if_branch{ if_branch }, m_else_branch{ else_branch }
+  {
+  }
+
+  ~IfStmt();
+
+  std::any Accept(NodeVisitor&) override;
+
+  [[nodiscard]] Expr*
+  condition() const noexcept
+  {
+    return m_condition;
+  }
+
+  [[nodiscard]] std::vector<Stmt*>
+  if_branch() const noexcept
+  {
+    return m_if_branch;
+  }
+
+  [[nodiscard]] std::vector<Stmt*>
+  else_branch() const noexcept
+  {
+    return m_else_branch;
+  }
+
+private:
+  Expr* m_condition;
+  std::vector<Stmt*> m_if_branch;
+  std::vector<Stmt*> m_else_branch;
 };
 
 // Expr
@@ -105,7 +142,7 @@ public:
 
   [[nodiscard]] int value() const noexcept;
 
-  std::any Accept(ExprVisitor&) override;
+  std::any Accept(NodeVisitor&) override;
 
 private:
   int value_ = 0;
@@ -122,7 +159,7 @@ public:
     return token_.lexeme();
   }
 
-  std::any Accept(ExprVisitor&) override;
+  std::any Accept(NodeVisitor&) override;
 };
 
 class BinaryExpr : public Expr
@@ -174,7 +211,7 @@ class AddExpr final : public BinaryExpr
 public:
   AddExpr(Token token, Expr* lhs, Expr* rhs) : BinaryExpr{ token, lhs, rhs } {}
 
-  std::any Accept(ExprVisitor&) override;
+  std::any Accept(NodeVisitor&) override;
 };
 
 // SubExpr x - y
@@ -183,7 +220,7 @@ class SubExpr final : public BinaryExpr
 public:
   SubExpr(Token token, Expr* lhs, Expr* rhs) : BinaryExpr{ token, lhs, rhs } {}
 
-  std::any Accept(ExprVisitor&) override;
+  std::any Accept(NodeVisitor&) override;
 };
 
 // MultExpr x * y
@@ -192,7 +229,7 @@ class MultExpr final : public BinaryExpr
 public:
   MultExpr(Token token, Expr* lhs, Expr* rhs) : BinaryExpr{ token, lhs, rhs } {}
 
-  std::any Accept(ExprVisitor&) override;
+  std::any Accept(NodeVisitor&) override;
 };
 
 // AssignExpr x := y
@@ -201,7 +238,7 @@ class AssignExpr final : public BinaryExpr
 public:
   AssignExpr(Token token, Expr* lhs, Expr* rhs) : BinaryExpr{ token, lhs, rhs } {}
 
-  std::any Accept(ExprVisitor&) override;
+  std::any Accept(NodeVisitor&) override;
 };
 
 }

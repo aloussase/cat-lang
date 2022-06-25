@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "Parser.hpp"
 #include "ast.hpp"
 
@@ -124,18 +126,27 @@ Parser::Parse()
 Stmt*
 Parser::parse_stmt()
 {
+  auto token{ peek() };
+  if (!token.has_value())
+    throw SynchronizationPoint{};
 
-  if (auto token{ peek() }; token->type() == TokenType::IDENTIFIER && token->lexeme() == "let")
+  if (token->type() == TokenType::IDENTIFIER)
     {
-      advance();
-      return parse_let_stmt();
+      if (token->lexeme() == "let")
+        {
+          advance();
+          return parse_let_stmt();
+        }
+      else if (token->lexeme() == "if")
+        {
+          advance();
+          return parse_if_stmt();
+        }
     }
-  else
-    {
-      auto expr{ parse_expr() };
-      consume(token->line(), TokenType::DOT);
-      return expr;
-    }
+
+  auto expr{ parse_expr() };
+  consume(token->line(), TokenType::DOT);
+  return expr;
 }
 
 LetStmt*
@@ -173,6 +184,88 @@ Parser::parse_let_stmt()
 
   consume(value->token().line(), TokenType::DOT);
   return new LetStmt{ static_cast<Identifier*>(identifier), value };
+}
+
+ast::IfStmt*
+Parser::parse_if_stmt()
+{
+  // TODO: pass this as a parameter
+  int line = -1;
+
+  if (!peek().has_value())
+    {
+      error(line, "Expected condition after if");
+      throw SynchronizationPoint{};
+    }
+
+  auto condition{ parse_expr() };
+
+  // TODO: it might be better to generate tokens for keywords
+
+  // Consume the 'then' keyword
+  auto then{ advance() };
+
+  if (!then)
+    {
+      error(then->line(), "Unexpected EOF after if");
+      hint("You need to put the 'then' keyword followed by the if body and 'end'");
+      throw SynchronizationPoint{};
+    }
+
+  if (then->type() != TokenType::IDENTIFIER || then->lexeme() != "then")
+    {
+      error(then->line(), "Expected 'then' after if statement condition");
+      throw SynchronizationPoint{};
+    }
+
+  std::vector<Stmt*> ifStmts{};
+  std::vector<Stmt*> elseStmts{};
+
+  auto token{ peek() };
+  if (!token.has_value() || token->type() == TokenType::END)
+    {
+      error(then->line(), "Expected if body after 'then'");
+      throw SynchronizationPoint{};
+    }
+
+  // TODO: implement is_at_end function and replace calls to token.has_value with that
+
+  // Parse the true branch
+  while (token.has_value() && token->lexeme() != "else" && token->lexeme() != "end")
+    {
+      ifStmts.push_back(parse_stmt());
+      token = peek();
+    }
+
+  if (!token.has_value())
+    {
+      error(then->line(), "Expected 'end' after if statement body");
+      throw SynchronizationPoint{};
+    }
+
+  if (token->lexeme() == "end")
+    {
+      advance();
+      return new IfStmt{ condition, ifStmts, elseStmts };
+    }
+
+  // Parse the false branch, if any
+
+  while (token.has_value() && token->lexeme() != "end")
+    {
+      elseStmts.push_back(parse_stmt());
+      token = peek();
+    }
+
+  if (!token.has_value() || token->lexeme() != "end")
+    {
+      error(token->line(), "Unterminated if statement");
+      hint("Add 'end' to the end of the if statement");
+      throw SynchronizationPoint{};
+    }
+
+  advance();
+  return new IfStmt{ condition, ifStmts, elseStmts };
 }
 
 Expr*

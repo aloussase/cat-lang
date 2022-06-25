@@ -194,6 +194,32 @@ MIPSTranspiler::VisitLetStmt(ast::LetStmt& letStmt)
 }
 
 std::any
+MIPSTranspiler::VisitIfStmt(ast::IfStmt& ifStmt)
+{
+  // Generate code for the condition
+  auto rs{ AS_REGISTER(ifStmt.condition()->Accept(*this)) };
+
+  // TODO: generate labels
+  enter_scope();
+
+  // Jump to the if branch if condition is truthy
+  emit("bne " + std::string(rs) + ", $zero, ifBranch");
+
+  // Otherwise continue to the else branch
+  emit("elseBranch:");
+  for (const auto stmt : ifStmt.else_branch())
+    stmt->Accept(*this);
+
+  // if branch
+  emit("ifBranch:");
+  for (const auto stmt : ifStmt.if_branch())
+    stmt->Accept(*this);
+
+  leave_scope();
+  return {};
+}
+
+std::any
 MIPSTranspiler::VisitNumber(ast::Number& expr)
 {
   auto r{ find_register() };

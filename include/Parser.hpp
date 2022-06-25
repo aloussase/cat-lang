@@ -65,8 +65,9 @@ public:
   friend ast::Expr* parse_binary_operator(Parser&, Token, ast::Expr*);
 
 private:
-  ast::Stmt* parse_stmt();
-  ast::LetStmt* parse_let_stmt();
+  [[nodiscard]] ast::Stmt* parse_stmt();
+  [[nodiscard]] ast::LetStmt* parse_let_stmt();
+  [[nodiscard]] ast::IfStmt* parse_if_stmt();
   ast::Expr* parse_expr(int precedence = 0);
 
   std::optional<PrefixParselet> get_prefix_parselet(TokenType) noexcept;

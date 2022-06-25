@@ -132,7 +132,7 @@ private:
 
 class Scope;
 
-class MIPSTranspiler final : public ExprVisitor
+class MIPSTranspiler final : public NodeVisitor
 {
 public:
   MIPSTranspiler(std::unique_ptr<ast::Node> program, std::vector<Diagnostic>& diagnostics)
@@ -165,6 +165,7 @@ public:
   std::any VisitProgram(ast::Program&) override;
   std::any VisitStmt(ast::Stmt&) override;
   std::any VisitLetStmt(ast::LetStmt&) override;
+  std::any VisitIfStmt(ast::IfStmt&) override;
   std::any VisitNumber(ast::Number&) override;
   std::any VisitIdentifier(ast::Identifier&) override;
   std::any VisitAddExpr(ast::AddExpr&) override;
