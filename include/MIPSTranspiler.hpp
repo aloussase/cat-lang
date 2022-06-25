@@ -130,6 +130,8 @@ private:
   name name_;
 };
 
+class Scope;
+
 class MIPSTranspiler final : public ExprVisitor
 {
 public:
@@ -171,8 +173,12 @@ public:
   std::any VisitAssignExpr(ast::AssignExpr&) override;
 
 private:
+  friend class Scope;
+
   [[nodiscard]] register_t find_register() noexcept;
   void release_register(register_t reg);
+
+  [[noreturn]] void undeclared_variable_error(ast::Identifier&);
 
   void emit(const std::string& s) noexcept;
   void emit(const Instruction& instruction) noexcept;
@@ -184,15 +190,68 @@ private:
     emit(Inst(args...));
   }
 
-  void require_variable_declared(ast::Identifier&) const;
+  std::vector<Diagnostic>&
+  diagnostics()
+  {
+    return m_diagnostics;
+  }
+
+  Stack&
+  stack() noexcept
+  {
+    return m_stack;
+  }
+
+  Scope&
+  current_scope() const noexcept
+  {
+    return *m_scope;
+  }
+
+  void enter_scope() noexcept;
+  void leave_scope() noexcept;
 
   ast::Node* m_program;
   std::vector<Diagnostic>& m_diagnostics;
 
   std::string m_result = {};
   std::bitset<register_t::size> m_registers = register_t::min_value;
-  std::unordered_map<std::string, int> m_variables = {};
+  Scope* m_scope = nullptr;
   Stack m_stack = { *this };
+};
+
+class Scope
+{
+public:
+  Scope(MIPSTranspiler& transpiler) : Scope{ nullptr, transpiler } {}
+
+  Scope(Scope* enclosing, MIPSTranspiler& transpiler) : m_enclosing{ enclosing }, m_transpiler{ transpiler }
+  {
+  }
+
+  [[nodiscard]] Scope*
+  enclosing() noexcept
+  {
+    return m_enclosing;
+  }
+
+  /**
+   * Declare and initialize a variable.
+   */
+  void declare_and_initialize(const ast::Identifier& identifier, register_t rs) noexcept;
+
+  /**
+   * Find a variable in the current scope and return its offset into the stack.
+   *
+   * If the variable is not found a runtime exception is thrown.
+   *
+   */
+  int find_variable(const ast::Identifier& identifier) const noexcept;
+
+private:
+  Scope* m_enclosing;
+  MIPSTranspiler& m_transpiler;
+  std::unordered_map<std::string, int> m_variables = {};
 };
 
 }

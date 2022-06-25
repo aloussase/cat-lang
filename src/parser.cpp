@@ -152,12 +152,14 @@ Parser::parse_let_stmt()
   catch (const SynchronizationPoint& ex)
     {
       hint("Maybe you meant to use the walrus operator ':='?");
+      delete identifier;
       throw ex;
     }
 
   if (identifier->token().type() != TokenType::IDENTIFIER)
     {
       error(identifier->token().line(), "Expected identifier after let");
+      delete identifier;
       throw SynchronizationPoint{};
     }
 
@@ -165,6 +167,7 @@ Parser::parse_let_stmt()
   if (!value)
     {
       error(identifier->token().line(), "Expected value at right hand of let statement");
+      delete identifier;
       throw SynchronizationPoint{};
     }
 
