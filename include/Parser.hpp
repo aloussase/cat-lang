@@ -76,6 +76,11 @@ private:
   std::optional<Token> advance() noexcept;
   [[nodiscard]] std::optional<Token> peek() const noexcept;
   void consume(int, TokenType, bool synchronize = true);
+  bool is_at_end() const noexcept;
+  bool match(const std::string&) noexcept;
+  bool matched(const std::string&) const noexcept;
+  int current_line() const noexcept;
+  Token previous() const noexcept;
   void synchronize() noexcept;
 
   void error(int, const std::string&) noexcept;

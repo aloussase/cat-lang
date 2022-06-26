@@ -1,2 +1,3 @@
 [x] Fix let 'x := 12' not incrementing the stack pointer
-[ ] Add copy to clipboard button
+[x] Add copy to clipboard button
+[ ] Move register acquisition to scope: must free all acquired registers in a given scope

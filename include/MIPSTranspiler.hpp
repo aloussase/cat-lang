@@ -152,7 +152,7 @@ public:
   public:
     Stack(MIPSTranspiler& transpiler) : m_transpiler{ transpiler } {}
 
-    int push() noexcept;
+    [[nodiscard]] int push() noexcept;
     void pop() noexcept;
 
   private:
@@ -212,6 +212,8 @@ private:
   void enter_scope() noexcept;
   void leave_scope() noexcept;
 
+  std::string generate_label(const std::string& prefix = "");
+
   ast::Node* m_program;
   std::vector<Diagnostic>& m_diagnostics;
 
@@ -219,6 +221,7 @@ private:
   std::bitset<register_t::size> m_registers = register_t::min_value;
   Scope* m_scope = nullptr;
   Stack m_stack = { *this };
+  int m_label_count = 0;
 };
 
 class Scope
@@ -228,6 +231,14 @@ public:
 
   Scope(Scope* enclosing, MIPSTranspiler& transpiler) : m_enclosing{ enclosing }, m_transpiler{ transpiler }
   {
+  }
+
+  ~Scope()
+  {
+    for (decltype(m_variables)::size_type i = 0; i < m_variables.size(); i++)
+      {
+        m_transpiler.stack().pop();
+      }
   }
 
   [[nodiscard]] Scope*

@@ -19,7 +19,6 @@ namespace cat
 MIPSTranspiler::~MIPSTranspiler()
 {
   delete m_program;
-  delete m_scope;
 }
 
 /*
@@ -70,7 +69,7 @@ MIPSTranspiler::Stack::push() noexcept
 {
   size_ += 4;
   register_t stack_register{ register_t::name::SP };
-  m_transpiler.emit<Instruction::ADDI>(stack_register, stack_register, 4);
+  m_transpiler.emit<Instruction::ADDI>(stack_register, stack_register, -4);
   return size_ - 4;
 }
 
@@ -78,6 +77,8 @@ void
 MIPSTranspiler::Stack::pop() noexcept
 {
   size_ -= 4;
+  register_t stack_register{ register_t::name::SP };
+  m_transpiler.emit<Instruction::ADDI>(stack_register, stack_register, 4);
 }
 
 /*
@@ -130,6 +131,16 @@ MIPSTranspiler::emit(const std::string& s) noexcept
 }
 
 /*
+ * Labels
+ */
+
+std::string
+MIPSTranspiler::generate_label(const std::string& prefix)
+{
+  return (prefix == "" ? "L" : prefix) + std::to_string(m_label_count++);
+}
+
+/*
  * Error routines
  */
 
@@ -161,8 +172,8 @@ MIPSTranspiler::Transpile()
         {
         }
     }
-  emit("jr    $ra");
   leave_scope();
+  emit("jr    $ra");
   return m_result;
 }
 
@@ -189,7 +200,7 @@ MIPSTranspiler::VisitLetStmt(ast::LetStmt& letStmt)
 {
   auto rs{ AS_REGISTER(letStmt.value().Accept(*this)) };
   current_scope().declare_and_initialize(letStmt.identifier(), rs);
-  release_register(AS_REGISTER(rs));
+  release_register(rs);
   return {};
 }
 
@@ -199,21 +210,43 @@ MIPSTranspiler::VisitIfStmt(ast::IfStmt& ifStmt)
   // Generate code for the condition
   auto rs{ AS_REGISTER(ifStmt.condition()->Accept(*this)) };
 
-  // TODO: generate labels
+  auto else_label{ generate_label("ELSE") };
+  auto exit_if_stmt_label{ generate_label("EXIT_IF") };
+
+  auto has_else_branch{ ifStmt.else_branch().size() > 0 };
+
+  // Enter a new scope for the if stmt
   enter_scope();
 
-  // Jump to the if branch if condition is truthy
-  emit("bne " + std::string(rs) + ", $zero, ifBranch");
+  // Generate code for the if branch first.
 
-  // Otherwise continue to the else branch
-  emit("elseBranch:");
-  for (const auto stmt : ifStmt.else_branch())
+  // Jump to the else branch if condition is falsey or over the if
+  // when the condition is false and there is not else branch.
+
+  if (has_else_branch)
+    emit("beq " + std::string(rs) + ", $zero, " + else_label);
+  else
+    emit("beq " + std::string(rs) + ", $zero, " + exit_if_stmt_label);
+
+  // We don't need the condition register anymore.
+
+  release_register(rs);
+
+  for (const auto& stmt : ifStmt.if_branch())
     stmt->Accept(*this);
 
-  // if branch
-  emit("ifBranch:");
-  for (const auto stmt : ifStmt.if_branch())
+  // Jump over the code for the else branch
+  if (has_else_branch)
+    emit("j " + exit_if_stmt_label);
+
+  // Now generate code for the else branch
+  if (has_else_branch)
+    emit(else_label + ":");
+
+  for (const auto& stmt : ifStmt.else_branch())
     stmt->Accept(*this);
+
+  emit(exit_if_stmt_label + ":");
 
   leave_scope();
   return {};

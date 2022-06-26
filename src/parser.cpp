@@ -24,6 +24,43 @@ Parser::peek() const noexcept
   return std::nullopt;
 }
 
+bool
+Parser::is_at_end() const noexcept
+{
+  return !peek().has_value() || peek()->type() == TokenType::END;
+}
+
+bool
+Parser::match(const std::string& lexeme) noexcept
+{
+  if (peek().has_value() && peek()->lexeme() == lexeme)
+    {
+      advance();
+      return true;
+    }
+  return false;
+}
+
+bool
+Parser::matched(const std::string& lexeme) const noexcept
+{
+  return previous().lexeme() == lexeme;
+}
+
+int
+Parser::current_line() const noexcept
+{
+  if (is_at_end())
+    return m_tokens[m_current - 1].line();
+  return peek()->line();
+}
+
+Token
+Parser::previous() const noexcept
+{
+  return m_tokens[m_current - 1];
+}
+
 void
 Parser::error(int line, const std::string& msg) noexcept
 {
@@ -189,12 +226,9 @@ Parser::parse_let_stmt()
 ast::IfStmt*
 Parser::parse_if_stmt()
 {
-  // TODO: pass this as a parameter
-  int line = -1;
-
-  if (!peek().has_value())
+  if (is_at_end())
     {
-      error(line, "Expected condition after if");
+      error(current_line(), "Expected condition after if");
       throw SynchronizationPoint{};
     }
 
@@ -203,68 +237,49 @@ Parser::parse_if_stmt()
   // TODO: it might be better to generate tokens for keywords
 
   // Consume the 'then' keyword
-  auto then{ advance() };
-
-  if (!then)
+  if (!match("then"))
     {
-      error(then->line(), "Unexpected EOF after if");
-      hint("You need to put the 'then' keyword followed by the if body and 'end'");
-      throw SynchronizationPoint{};
-    }
-
-  if (then->type() != TokenType::IDENTIFIER || then->lexeme() != "then")
-    {
-      error(then->line(), "Expected 'then' after if statement condition");
+      error(current_line(), "Expected 'then' after if statement condition");
+      hint("Insert 'then' to start the statement body");
       throw SynchronizationPoint{};
     }
 
   std::vector<Stmt*> ifStmts{};
   std::vector<Stmt*> elseStmts{};
 
-  auto token{ peek() };
-  if (!token.has_value() || token->type() == TokenType::END)
-    {
-      error(then->line(), "Expected if body after 'then'");
-      throw SynchronizationPoint{};
-    }
-
-  // TODO: implement is_at_end function and replace calls to token.has_value with that
-
   // Parse the true branch
-  while (token.has_value() && token->lexeme() != "else" && token->lexeme() != "end")
-    {
-      ifStmts.push_back(parse_stmt());
-      token = peek();
-    }
+  while (!is_at_end() && !match("else") && !match("end"))
+    ifStmts.push_back(parse_stmt());
 
-  if (!token.has_value())
-    {
-      error(then->line(), "Expected 'end' after if statement body");
-      throw SynchronizationPoint{};
-    }
+  if (matched("end"))
+    return new IfStmt{ condition, ifStmts, elseStmts };
 
-  if (token->lexeme() == "end")
+  if (is_at_end())
     {
-      advance();
-      return new IfStmt{ condition, ifStmts, elseStmts };
-    }
-
-  // Parse the false branch, if any
-
-  while (token.has_value() && token->lexeme() != "end")
-    {
-      elseStmts.push_back(parse_stmt());
-      token = peek();
-    }
-
-  if (!token.has_value() || token->lexeme() != "end")
-    {
-      error(token->line(), "Unterminated if statement");
+      error(current_line(), "Expected 'end' after if statement body");
       hint("Add 'end' to the end of the if statement");
       throw SynchronizationPoint{};
     }
 
-  advance();
+  // Parse the false branch, since we did not see and 'end' above
+
+  if (!matched("else"))
+    {
+      error(current_line(), "Expected else block after if");
+      hint("Add 'else' to begin an else block");
+      throw SynchronizationPoint{};
+    }
+
+  while (!is_at_end() && !match("end"))
+    elseStmts.push_back(parse_stmt());
+
+  if (!matched("end"))
+    {
+      error(current_line(), "Unterminated if statement");
+      hint("Add 'end' to the end of the if statement");
+      throw SynchronizationPoint{};
+    }
+
   return new IfStmt{ condition, ifStmts, elseStmts };
 }
 
