@@ -48,15 +48,10 @@ int
 Scope::find_variable(const ast::Identifier& identifier) const noexcept
 {
   if (auto offset_ptr{ m_variables.find(identifier.name()) }; offset_ptr != m_variables.end())
-    {
-      return offset_ptr->second;
-    }
+    return offset_ptr->second;
 
-  while (m_enclosing != nullptr)
-    {
-      if (auto offset{ m_enclosing->find_variable(identifier) }; offset != -1)
-        return offset;
-    }
+  if (m_enclosing != nullptr)
+    return m_enclosing->find_variable(identifier);
 
   return -1;
 }
