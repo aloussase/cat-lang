@@ -81,6 +81,7 @@ private:
   bool matched(const std::string&) const noexcept;
   int current_line() const noexcept;
   Token previous() const noexcept;
+  /// Advance the parser until the next synchronization point.
   void synchronize() noexcept;
 
   void error(int, const std::string&) noexcept;

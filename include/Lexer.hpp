@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "diagnostic.hpp"
+#include "span.hpp"
 
 namespace cat
 {
@@ -28,21 +29,21 @@ enum class TokenType
 class Token
 {
 public:
-  Token(int line, TokenType type, const std::string& lexeme)
-      : line_{ line }, type_{ type }, lexeme_{ lexeme }
+  Token(int line, TokenType type, const std::string& lexeme, Span span)
+      : line_{ line }, m_type{ type }, m_lexeme{ lexeme }, m_span{ span }
   {
   }
 
   [[nodiscard]] std::string
   lexeme() const noexcept
   {
-    return lexeme_;
+    return m_lexeme;
   }
 
   [[nodiscard]] TokenType
   type() const noexcept
   {
-    return type_;
+    return m_type;
   }
 
   [[nodiscard]] std::string type_as_str();
@@ -55,9 +56,10 @@ public:
 
 private:
   int line_;
-  TokenType type_;
+  TokenType m_type;
   // TODO: replace this with a string_view or some other kind of span
-  std::string lexeme_;
+  std::string m_lexeme;
+  Span m_span;
 };
 
 std::ostream& operator<<(std::ostream&, Token);
@@ -85,8 +87,9 @@ private:
   std::string m_source;
   std::vector<Diagnostic>& m_diagnostics;
   std::vector<Token> m_tokens = {};
-  std::string::size_type m_current = 0;
+  int m_current = 0;
   int m_line = 1;
+  int m_start = 0;
 };
 
 }

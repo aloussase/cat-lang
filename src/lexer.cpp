@@ -43,7 +43,7 @@ token_type_as_str(TokenType type)
 std::string
 Token::type_as_str()
 {
-  return token_type_as_str(type_);
+  return token_type_as_str(m_type);
 }
 
 std::vector<Token>
@@ -51,26 +51,27 @@ Lexer::Lex()
 {
   while (!is_at_end())
     {
+      m_start = m_current;
       char c{ advance() };
       switch (c)
         {
         case '+':
-          m_tokens.emplace_back(m_line, TokenType::PLUS, "+");
+          m_tokens.emplace_back(m_line, TokenType::PLUS, "+", Span{ m_start, m_current });
           break;
         case '-':
-          m_tokens.emplace_back(m_line, TokenType::MINUS, "-");
+          m_tokens.emplace_back(m_line, TokenType::MINUS, "-", Span{ m_start, m_current });
           break;
         case '*':
-          m_tokens.emplace_back(m_line, TokenType::STAR, "*");
+          m_tokens.emplace_back(m_line, TokenType::STAR, "*", Span{ m_start, m_current });
           break;
         case '(':
-          m_tokens.emplace_back(m_line, TokenType::LPAREN, "(");
+          m_tokens.emplace_back(m_line, TokenType::LPAREN, "(", Span{ m_start, m_current });
           break;
         case ')':
-          m_tokens.emplace_back(m_line, TokenType::RPAREN, ")");
+          m_tokens.emplace_back(m_line, TokenType::RPAREN, ")", Span{ m_start, m_current });
           break;
         case '.':
-          m_tokens.emplace_back(m_line, TokenType::DOT, ".");
+          m_tokens.emplace_back(m_line, TokenType::DOT, ".", Span{ m_start, m_current });
           break;
         case '0':
         case '1':
@@ -94,7 +95,7 @@ Lexer::Lex()
               }
             else
               {
-                m_tokens.emplace_back(m_line, TokenType::WALRUS, ":=");
+                m_tokens.emplace_back(m_line, TokenType::WALRUS, ":=", Span{ m_start, m_current });
               }
           }
         case ' ':
@@ -114,7 +115,7 @@ Lexer::Lex()
         }
     }
 
-  m_tokens.push_back(Token{ m_line, TokenType::END, "EOF" });
+  m_tokens.push_back(Token{ m_line, TokenType::END, "EOF", Span{ m_start, m_current } });
   return m_tokens;
 }
 
@@ -159,7 +160,7 @@ Lexer::number(char c) noexcept
       result += c;
     }
 
-  return { m_line, TokenType::NUMBER, result };
+  return { m_line, TokenType::NUMBER, result, Span{ m_start, m_current } };
 }
 
 Token
@@ -173,7 +174,7 @@ Lexer::identifier(char c) noexcept
       result += c;
     }
 
-  return { m_line, TokenType::IDENTIFIER, result };
+  return { m_line, TokenType::IDENTIFIER, result, Span{ m_start, m_current } };
 }
 
 }
