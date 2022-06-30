@@ -9,6 +9,7 @@
 
 #include "Lexer.hpp"
 #include "ast.hpp"
+#include "span.hpp"
 
 namespace cat
 {
@@ -80,11 +81,17 @@ private:
   bool match(const std::string&) noexcept;
   bool matched(const std::string&) const noexcept;
   int current_line() const noexcept;
+
+  /// Return a Span for the curren token.
+  Span current_span() const noexcept;
+
+  // Return the previous token.
   Token previous() const noexcept;
+
   /// Advance the parser until the next synchronization point.
   void synchronize() noexcept;
 
-  void error(int, const std::string&) noexcept;
+  void error(int, const std::string&, Span) noexcept;
   void hint(const std::string&) noexcept;
 
   std::vector<Token> m_tokens;

@@ -89,8 +89,8 @@ Lexer::Lex()
           {
             if (c = advance(); c != '=')
               {
-                m_diagnostics.emplace_back(m_line, "Unexpected token ':'");
-                m_diagnostics.emplace_back(m_line, Diagnostic::Severity::HINT,
+                m_diagnostics.emplace_back(m_line, "Unexpected token ':'", Span{ m_start, m_current });
+                m_diagnostics.emplace_back(Diagnostic::Severity::HINT,
                                            "Maybe you meant to use the assignment operator ':='?");
               }
             else
@@ -110,7 +110,8 @@ Lexer::Lex()
             if (is_identifier_character(c))
               m_tokens.push_back(identifier(c));
             else
-              m_diagnostics.emplace_back(m_line, "Invalid token '" + std::string{ c } + "'");
+              m_diagnostics.emplace_back(m_line, "Invalid token '" + std::string{ c } + "'",
+                                         Span{ m_start, m_current });
           }
         }
     }

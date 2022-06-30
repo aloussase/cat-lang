@@ -55,6 +55,14 @@ Parser::current_line() const noexcept
   return peek()->line();
 }
 
+Span
+Parser::current_span() const noexcept
+{
+  if (is_at_end())
+    return m_tokens[m_current - 1].span();
+  return peek()->span();
+}
+
 Token
 Parser::previous() const noexcept
 {
@@ -62,9 +70,9 @@ Parser::previous() const noexcept
 }
 
 void
-Parser::error(int line, const std::string& msg) noexcept
+Parser::error(int line, const std::string& msg, Span span) noexcept
 {
-  m_diagnostics.push_back({ line, msg });
+  m_diagnostics.push_back({ line, msg, span });
 }
 
 void
@@ -80,7 +88,8 @@ Parser::consume(int line, TokenType type, bool synchronize)
 
   if (!token.has_value())
     {
-      error(line, "Unexpected end of file");
+      // TODO: Get a span in here somehow
+      error(line, "Unexpected end of file", Span{ 0, 0 });
       if (synchronize)
         throw SynchronizationPoint{};
       else
@@ -93,9 +102,9 @@ Parser::consume(int line, TokenType type, bool synchronize)
     return;
 
   if (token->type() == TokenType::END)
-    error(token->line(), "Unexpected end of file");
+    error(token->line(), "Unexpected end of file", token->span());
   else
-    error(token->line(), "Unexpected token '" + token->type_as_str() + "'");
+    error(token->line(), "Unexpected token '" + token->type_as_str() + "'", token->span());
 
   if (type == TokenType::DOT)
     hint("Statements must end with a '.'");
@@ -206,7 +215,7 @@ Parser::parse_let_stmt()
 
   if (identifier->token().type() != TokenType::IDENTIFIER)
     {
-      error(identifier->token().line(), "Expected identifier after let");
+      error(identifier->token().line(), "Expected identifier after let", identifier->token().span());
       delete identifier;
       throw SynchronizationPoint{};
     }
@@ -214,7 +223,8 @@ Parser::parse_let_stmt()
   auto value{ parse_expr() };
   if (!value)
     {
-      error(identifier->token().line(), "Expected value at right hand of let statement");
+      error(identifier->token().line(), "Expected value at right hand of let statement",
+            identifier->token().span());
       delete identifier;
       throw SynchronizationPoint{};
     }
@@ -228,7 +238,7 @@ Parser::parse_if_stmt()
 {
   if (is_at_end())
     {
-      error(current_line(), "Expected condition after if");
+      error(current_line(), "Expected condition after if", current_span());
       throw SynchronizationPoint{};
     }
 
@@ -239,7 +249,7 @@ Parser::parse_if_stmt()
   // Consume the 'then' keyword
   if (!match("then"))
     {
-      error(current_line(), "Expected 'then' after if statement condition");
+      error(current_line(), "Expected 'then' after if statement condition", current_span());
       hint("Insert 'then' to start the statement body");
       throw SynchronizationPoint{};
     }
@@ -256,7 +266,7 @@ Parser::parse_if_stmt()
 
   if (is_at_end())
     {
-      error(current_line(), "Expected 'end' after if statement body");
+      error(current_line(), "Expected 'end' after if statement body", current_span());
       hint("Add 'end' to the end of the if statement");
       throw SynchronizationPoint{};
     }
@@ -265,7 +275,7 @@ Parser::parse_if_stmt()
 
   if (!matched("else"))
     {
-      error(current_line(), "Expected else block after if");
+      error(current_line(), "Expected else block after if", current_span());
       hint("Add 'else' to begin an else block");
       throw SynchronizationPoint{};
     }
@@ -275,7 +285,7 @@ Parser::parse_if_stmt()
 
   if (!matched("end"))
     {
-      error(current_line(), "Unterminated if statement");
+      error(current_line(), "Unterminated if statement", current_span());
       hint("Add 'end' to the end of the if statement");
       throw SynchronizationPoint{};
     }
@@ -293,7 +303,7 @@ Parser::parse_expr(int precedence)
   auto prefix_parselet{ get_prefix_parselet(token->type()) };
   if (!prefix_parselet.has_value())
     {
-      error(token->line(), "Invalid start of prefix expression: '" + token->lexeme() + "'");
+      error(token->line(), "Invalid start of prefix expression: '" + token->lexeme() + "'", token->span());
       throw SynchronizationPoint{};
     }
 
@@ -308,7 +318,7 @@ Parser::parse_expr(int precedence)
 
       if (!infix_parselet.has_value())
         {
-          error(next->line(), "Invalid start of infix expression: '" + next->lexeme() + "'");
+          error(next->line(), "Invalid start of infix expression: '" + next->lexeme() + "'", next->span());
           throw SynchronizationPoint{};
         }
 
@@ -357,7 +367,8 @@ parse_binary_operator(Parser& parser, Token token, Expr* lhs)
       {
         if (lhs->token().type() != TokenType::IDENTIFIER)
           {
-            parser.error(lhs->token().line(), "Left side of assignment must be a variable.");
+            parser.error(lhs->token().line(), "Left side of assignment must be a variable.",
+                         lhs->token().span());
             throw Parser::SynchronizationPoint{};
           }
         auto rhs{ parser.parse_expr() };

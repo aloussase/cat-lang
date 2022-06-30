@@ -2,6 +2,8 @@
 
 #include <string>
 
+#include "span.hpp"
+
 namespace cat
 {
 
@@ -14,14 +16,21 @@ public:
     HINT
   };
 
-  Diagnostic(const std::string& message) : Diagnostic{ 0, message } {}
+  // TODO: Make a NullSpan for hints
 
-  Diagnostic(int line, const std::string& message) : Diagnostic{ line, Severity::ERROR, message } {}
+  Diagnostic(const std::string& message) : Diagnostic{ 0, message, Span{ 0, 0 } } {}
 
-  Diagnostic(Severity severity, const std::string& message) : Diagnostic{ 0, severity, message } {}
+  Diagnostic(int line, const std::string& message, Span span)
+      : Diagnostic{ line, Severity::ERROR, message, span }
+  {
+  }
 
-  Diagnostic(int line, Severity severity, const std::string& message)
-      : m_line{ line }, m_severity{ severity }, m_message{ message }
+  Diagnostic(Severity severity, const std::string& message) : Diagnostic{ 0, severity, message, Span{ 0, 0 } }
+  {
+  }
+
+  Diagnostic(int line, Severity severity, const std::string& message, Span span)
+      : m_line{ line }, m_severity{ severity }, m_message{ message }, m_span{ span }
   {
   }
 
@@ -43,6 +52,7 @@ private:
   int m_line = {};
   Severity m_severity;
   std::string m_message = {};
+  Span m_span;
 };
 
 } // namespace cat
