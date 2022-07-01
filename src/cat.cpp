@@ -40,7 +40,7 @@ transpile(const std::string& source, const std::string& file)
 
   for (const auto& diagnostic : diagnostics)
     {
-      result += diagnostic.format(file);
+      result += diagnostic.format(file, source);
     }
 
   return result;

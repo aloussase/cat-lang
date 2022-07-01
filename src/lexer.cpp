@@ -87,16 +87,14 @@ Lexer::Lex()
           break;
         case ':':
           {
-            if (c = advance(); c != '=')
-              {
-                m_diagnostics.emplace_back(m_line, "Unexpected token ':'", Span{ m_start, m_current });
-                m_diagnostics.emplace_back(Diagnostic::Severity::HINT,
-                                           "Maybe you meant to use the assignment operator ':='?");
-              }
+            if (c = peek(); c != '=')
+              m_diagnostics.emplace_back(m_line, "Unexpected token ':'", Span{ m_start, m_current });
             else
               {
+                advance();
                 m_tokens.emplace_back(m_line, TokenType::WALRUS, ":=", Span{ m_start, m_current });
               }
+            break;
           }
         case ' ':
         case '\t':

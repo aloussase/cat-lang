@@ -37,7 +37,7 @@ public:
   /**
    * Format this diagnostic and return the result as a string.
    */
-  std::string format(const std::string& file = "<repl>") const noexcept;
+  std::string format(const std::string& file = "<repl>", const std::string& repl_line = "") const noexcept;
 
   /**
    * Display this diagnostic.
@@ -45,7 +45,7 @@ public:
   void show(const std::string& file = "<repl>") const noexcept;
 
 private:
-  std::string format_error() const noexcept;
+  std::string format_error(const std::string& repl_line) const noexcept;
   std::string format_hint() const noexcept;
 
   mutable std::string m_file = "<repl>";

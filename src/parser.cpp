@@ -88,8 +88,7 @@ Parser::consume(int line, TokenType type, bool synchronize)
 
   if (!token.has_value())
     {
-      // TODO: Get a span in here somehow
-      error(line, "Unexpected end of file", Span{ 0, 0 });
+      error(line, "Unexpected end of file", current_span());
       if (synchronize)
         throw SynchronizationPoint{};
       else
@@ -104,7 +103,7 @@ Parser::consume(int line, TokenType type, bool synchronize)
   if (token->type() == TokenType::END)
     error(token->line(), "Unexpected end of file", token->span());
   else
-    error(token->line(), "Unexpected token '" + token->type_as_str() + "'", token->span());
+    error(token->line(), "Unexpected token '" + token->lexeme() + "'", token->span());
 
   if (type == TokenType::DOT)
     hint("Statements must end with a '.'");
@@ -118,12 +117,10 @@ Parser::consume(int line, TokenType type, bool synchronize)
 void
 Parser::synchronize() noexcept
 {
-  while (peek().has_value() && peek()->type() != TokenType::END)
-    {
-      auto token{ advance() };
-      if (token->type() == TokenType::DOT)
-        return;
-    }
+  while (peek().has_value() && peek()->type() != TokenType::END && peek()->type() != TokenType::DOT)
+    advance();
+  // Skip the '.' or 'END'
+  advance();
 }
 
 std::optional<Parser::PrefixParselet>
@@ -153,19 +150,19 @@ Parser::Parse()
       try
         {
           if (auto stmt{ parse_stmt() }; stmt)
-            {
-              program->add_stmt(stmt);
-            }
+            program->add_stmt(stmt);
         }
       catch (const SynchronizationPoint& sync)
         {
+#ifdef DEBUG
+          std::cout << "synchronizing\n";
+#endif
           synchronize();
         }
       token = peek();
     }
 
-  if (token.has_value())
-    consume(token->line(), TokenType::END, false);
+  consume(token->line(), TokenType::END, false);
   return program;
 };
 
@@ -208,7 +205,10 @@ Parser::parse_let_stmt()
     }
   catch (const SynchronizationPoint& ex)
     {
-      hint("Maybe you meant to use the walrus operator ':='?");
+#ifdef DEBUG
+      std::cout << "parse_let_stmt emitting hint about ':=' operator\n";
+#endif
+      hint("Maybe you meant to use the assignment operator ':='?");
       delete identifier;
       throw ex;
     }
