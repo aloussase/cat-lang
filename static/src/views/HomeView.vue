@@ -18,7 +18,7 @@
          .replace(/\[31m/g, "<span style='color: red; font-weight: bold;'>")
          .replace(/\[34m/g, "<span style='color: cyan; font-weight: bold;'>")
          .replace(/\[m/g, "</span>")
-         .replace(/[^-a-zA-Z0-9\<\>\n\[\]=:';\/&.$,? ]/g, '');
+         .replace(/[^-a-zA-Z0-9\<\>\n\[\]=:';\/&.$,?^()| ]/g, '');
  }
 
  function copyToClipboard(nodeCoords, extractorFn)
