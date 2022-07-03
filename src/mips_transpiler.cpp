@@ -140,8 +140,7 @@ void
 MIPSTranspiler::undeclared_variable_error(ast::Identifier& identifier)
 {
   // TODO: attach spans to expression to have access to them here
-  m_diagnostics.emplace_back(identifier.token().line(), "Unbound variable " + identifier.name(),
-                             Span{ 0, 0 });
+  m_diagnostics.emplace_back(identifier.token().line(), "Unbound variable " + identifier.name(), Span{ 0, 0 });
   std::string hint{ "Maybe you forgot to declare the variable?\n\n" };
   hint += "\t let " + identifier.name() + " := ...";
   m_diagnostics.push_back({ identifier.token().line(), Diagnostic::Severity::HINT, hint, Span{ 0, 0 } });

@@ -2,3 +2,5 @@ test.mips
 .ccls-cache
 build
 tui.png
+tags
+test.cat
