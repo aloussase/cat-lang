@@ -6,11 +6,9 @@
  const loading = ref(false)
  const transpilationInput = ref("1 + 2.");
  const transpilationOutput = ref("");
+ const executionOutput = ref("");
 
- function htmlEntities(s)
- {
-     return s.replaceAll("<", "&lt").replaceAll(">", "&gt");
- }
+ const htmlEntities = (s) => s.replaceAll("<", "&lt").replaceAll(">", "&gt");
 
  function preprocessOutput(s)
  {
@@ -29,33 +27,27 @@
      setTimeout(() => showClipboardCopiedNotification.value = false, 1000)
  }
 
- function copyMIPS()
- {
-     copyToClipboard("#transpilation-output-output code", node => node.innerText)
- }
+ const copyMIPS = () => copyToClipboard("#transpilation-output-output code", node => node.innerText);
+ const copySRC = () => copyToClipboard("#transpilation-input textarea", node => node.value)
 
- function copySRC()
- {
-     copyToClipboard("#transpilation-input textarea", node => node.value)
- }
-
- function transpile()
- {
+ const transpile = async() => {
      loading.value = true;
 
-     fetch(`https://cat-lang.herokuapp.com/api/v1/transpilation`, {
+     const resp = await fetch(`https://cat-lang.herokuapp.com/api/v1/transpilation_and_execution`, {
          method: "POST",
          headers: {"Content-Type": "application/json" },
          body: JSON.stringify({data: transpilationInput.value})
-     }).then(response => response.json())
-       .then(result => {
-           transpilationOutput.value = preprocessOutput(result.data)
-           loading.value = false;
-       })
-       .catch(error => {
-           console.log(error)
-           loading.value = false;
-       });
+     });
+
+     const data = await resp.json();
+
+     transpilationOutput.value = preprocessOutput(data["data"]["transpilation_result"]);
+
+     if (resp.ok) {
+         executionOutput.value = data["data"]["execution_result"];
+     }
+
+     loading.value = false;
  }
 </script>
 
@@ -79,9 +71,15 @@
             <textarea v-model="transpilationInput" @keyup.ctrl.enter="transpile" spellcheck="false" />
         </div>
 
-        <div id="transpilation-output" class="main-item">
-            <span id="transpilation-output-header">Transpilation</span>
-            <pre id="transpilation-output-output"><code v-html="transpilationOutput"></code></pre>
+        <div id="bottom-pane" class="main-item">
+            <div id="transpilation-output" >
+                <span id="transpilation-output-header">Transpilation</span>
+                <pre id="transpilation-output-output"><code v-html="transpilationOutput"></code></pre>
+            </div>
+            <div id="execution-output">
+                <span id="execution-output-header">Execution</span>
+                <pre id="execution-output-output"><code v-html="executionOutput"></code></pre>
+            </div>
         </div>
 
     </main>
@@ -122,7 +120,9 @@
 
  #transpilation-input {
      textarea {
+         outline: none;
          padding: 1rem;
+         border: 1px solid #bbb;
          border-radius: 5px;
          resize: none;
          height: 200px;
@@ -130,27 +130,33 @@
      }
  }
 
- #transpilation-output {
-     width: 100%;
-     display: flex;
-     flex-direction: column;
-     align-items: center;
-     border: 1px solid #bbb;
-     background-color: white;
-     padding: 0.5rem;
+ #bottom-pane {
+     display: grid;
+     grid-template-columns: repeat(2, 1fr);
+     grid-gap: 0.5rem;
 
-     span {
-         border-bottom: 1px solid #bbb;
-         text-align: center;
-         padding-bottom: 0.5rem;
-         margin-bottom: 0.5rem;
+     #transpilation-output, #execution-output {
          width: 100%;
-     }
+         display: flex;
+         flex-direction: column;
+         align-items: center;
+         border: 1px solid #bbb;
+         background-color: white;
+         padding: 0.5rem;
 
-     pre {
-         width: 100%;
-         height: 200px;
-         overflow-y:auto;
+         span {
+             border-bottom: 1px solid #bbb;
+             text-align: center;
+             padding-bottom: 0.5rem;
+             margin-bottom: 0.5rem;
+             width: 100%;
+         }
+
+         pre {
+             width: 100%;
+             height: 200px;
+             overflow-y:auto;
+         }
      }
  }
 </style>
