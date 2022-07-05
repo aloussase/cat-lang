@@ -15,10 +15,12 @@
 
 #define CAT_TMP_NAME "cat-out.mips"
 #define SPIM_EXE "/usr/bin/spim"
+#define BUFSIZE  100
 
 namespace cat
 {
 
+// TODO: Replace exit with return.
 std::string
 execute(const std::string& program)
 {
@@ -42,7 +44,6 @@ execute(const std::string& program)
       std::exit(EXIT_FAILURE);
     }
 
-  pid_t pid = fork();
   int pipefd[2];
   if (pipe(pipefd) == -1)
     {
@@ -50,20 +51,32 @@ execute(const std::string& program)
       std::exit(EXIT_FAILURE);
     }
 
+  pid_t pid = fork();
+  if (pid == -1)
+    {
+      perror("fork");
+      std::exit(EXIT_FAILURE);
+    }
+
   if (pid == 0) // Child
     {
-      // Close read end
-      close(pipefd[0]);
-
       // Set our write end of the pipe to output stdout
-      if (dup2(1, pipefd[1]) == -1)
+      if (dup2(pipefd[1], STDOUT_FILENO) == -1)
         {
-          std::perror("Failed to duplicate 1");
+          std::perror("Failed to duplicate stdout");
           std::exit(EXIT_FAILURE);
         }
 
+      if (dup2(pipefd[1], STDERR_FILENO) == -1)
+        {
+          std::perror("Failed to duplicate stdout");
+          std::exit(EXIT_FAILURE);
+        }
+
+      close(pipefd[0]);
+      close(pipefd[1]);
+
       char* const argv[] = {
-        // Para que no joda el compilador
         (char*)SPIM_EXE,
         (char*)"-f",
         (char*)CAT_TMP_NAME,
@@ -79,6 +92,16 @@ execute(const std::string& program)
   // Close write end
   close(pipefd[1]);
 
+  char buf[BUFSIZE+1];
+  std::string output{};
+
+  int nread{};
+  while ((nread = read(pipefd[0], buf, sizeof(BUFSIZE))) > 0)
+    {
+      buf[nread] = '\0';
+      output += buf;
+    }
+
   // Wait for child to exit
   int wstatus;
   if (waitpid(pid, &wstatus, 0) < 0)
@@ -86,12 +109,6 @@ execute(const std::string& program)
       std::perror("Failed to wait for child");
       std::exit(EXIT_FAILURE);
     }
-
-  char buf[100];
-  std::string output{};
-
-  while (read(pipefd[0], buf, sizeof(buf)) > 0)
-    output += buf;
 
   // Delete the temporary file
   std::remove(CAT_TMP_NAME);
