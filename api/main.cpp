@@ -16,18 +16,22 @@ main()
   cors.global().methods(crow::HTTPMethod::POST).origin("*");
 
   CROW_ROUTE(app, "/api/v1/transpilation").methods(crow::HTTPMethod::POST)([](const crow::request& req) {
-    int status_code{200};
+    int status_code{ 200 };
     crow::json::wvalue payload{};
 
-    if (auto body{ crow::json::load(req.body) }; body && body.has("data")) {
-      payload["data"] = cat::transpile(body["data"].s());
-    }
-    else {
-      payload["error"] = "Invalid payload, expected expression in 'data' key";
-      status_code = 400;
-    }
+    if (auto body{ crow::json::load(req.body) }; body && body.has("data"))
+      {
+        std::string output{};
+        cat::transpile(body["data"].s(), output);
+        payload["data"] = output;
+      }
+    else
+      {
+        payload["error"] = "Invalid payload, expected expression in 'data' key";
+        status_code = 400;
+      }
 
-    return crow::response{status_code, payload};
+    return crow::response{ status_code, payload };
   });
 
   std::string port{ "8080" };

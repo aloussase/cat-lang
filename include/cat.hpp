@@ -5,6 +5,7 @@
 namespace cat
 {
 
-std::string transpile(const std::string& source, const std::string& file = "<repl>");
+std::string execute(const std::string& program);
+bool transpile(const std::string& source, std::string& result, const std::string& file = "<repl>");
 
 }

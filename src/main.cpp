@@ -1,93 +1,8 @@
 #include <cstdio>
-#include <cstdlib>
 #include <cstring>
 #include <iostream>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <unistd.h>
 
 #include "cat.hpp"
-
-#define CAT_TMP_NAME "cat-out.mips"
-#define SPIM_EXE "/usr/bin/spim"
-
-/// Write the program to a temporary file and run it using SPIM.
-void
-execute_program(const std::string& program)
-{
-  FILE* fp = std::fopen(CAT_TMP_NAME, "w");
-
-  if (!fp)
-    {
-      std::perror("Failed to create temporary file");
-      std::exit(EXIT_FAILURE);
-    }
-
-  if (std::fputs(program.c_str(), fp) < 0)
-    {
-      std::perror("Failed to write program to temporary file");
-      std::exit(EXIT_FAILURE);
-    }
-
-  if (std::fclose(fp) == EOF)
-    {
-      std::perror("Failed to close file");
-      std::exit(EXIT_FAILURE);
-    }
-
-  pid_t pid = fork();
-  int pipefd[2];
-  if (pipe(pipefd) == -1)
-    {
-      perror("Failed to pipe");
-      std::exit(EXIT_FAILURE);
-    }
-
-  if (pid == 0) // Child
-    {
-      // Close read end
-      close(pipefd[0]);
-
-      // Set our write end of the pipe to output stdout
-      if (dup2(1, pipefd[1]) == -1)
-        {
-          std::perror("Failed to duplicate 1");
-          std::exit(EXIT_FAILURE);
-        }
-
-      char* const argv[] = {
-        // Para que no joda el compilador
-        (char*)SPIM_EXE,
-        (char*)"-f",
-        (char*)CAT_TMP_NAME,
-        (char*)NULL,
-      };
-
-      execvp(SPIM_EXE, argv);
-
-      perror("exec");
-      std::exit(EXIT_FAILURE);
-    }
-
-  // Close write end
-  close(pipefd[1]);
-
-  // Wait for child to exit
-  int wstatus;
-  if (waitpid(pid, &wstatus, 0) < 0)
-    {
-      std::perror("Failed to wait for child");
-      std::exit(EXIT_FAILURE);
-    }
-
-  // Read & output child stdout
-  char buf[100];
-  while (read(pipefd[0], buf, sizeof(buf)) > 0)
-    std::cout << buf;
-
-  // Delete the temporary file
-  std::remove(CAT_TMP_NAME);
-}
 
 /// Run a repl.
 void
@@ -99,13 +14,17 @@ repl()
   std::cout << "Press C-d to exit\n\n";
 
   std::cout << "> ";
+
+  std::string result;
+
   while (std::getline(std::cin, line))
     {
       if (line == ".quit")
         break;
 
-      std::cout << cat::transpile(line) << "\n";
-      std::cout << "> ";
+      cat::transpile(line, result);
+      std::cout << result << "\n> ";
+      result.clear();
     }
 }
 
@@ -159,12 +78,17 @@ main(int argc, char** argv)
   while (std::fgets(line, sizeof(line), fin) != NULL)
     program += line;
 
-  auto result{ cat::transpile(program, filename) };
+  std::string result{};
+  auto ok{ cat::transpile(program, result, filename) };
 
   if (!run)
     std::fputs(result.c_str(), fout);
+  else if (ok)
+    // We need to check if there were any errors before sending the
+    // transpiler's output to SPIM.
+    std::cout << cat::execute(result);
   else
-    execute_program(result);
+    std::cout << result;
 
   std::fclose(fout);
   std::fclose(fin);
