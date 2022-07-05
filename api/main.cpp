@@ -1,6 +1,6 @@
 #include <cstdlib>
-
-#include "crow_all.h"
+#include "crow.h"
+#include "crow/middlewares/cors.h"
 
 #include "api_response.hpp"
 #include "cat.hpp"
