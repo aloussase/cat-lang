@@ -1,6 +1,6 @@
 FROM ubuntu:latest AS build
 
-RUN apt-get update && apt-get install -y cmake g++ libboost-all-dev
+RUN apt-get update && apt-get install -y cmake g++ libasio-dev
 
 WORKDIR /app
 COPY . .
