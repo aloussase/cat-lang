@@ -16,22 +16,40 @@ main()
   cors.global().methods(crow::HTTPMethod::POST).origin("*");
 
   CROW_ROUTE(app, "/api/v1/transpilation").methods(crow::HTTPMethod::POST)([](const crow::request& req) {
-    int status_code{ 200 };
-    crow::json::wvalue payload{};
+    auto body{ crow::json::load(req.body) };
 
-    if (auto body{ crow::json::load(req.body) }; body && body.has("data"))
+    if (!body.has("data"))
+      return crow::response{ 400 };
+
+    auto program{ body["data"].s() };
+    std::string output{};
+
+    cat::transpile(program, output);
+
+    return crow::response{ 200, output };
+  });
+
+  CROW_ROUTE(app, "/api/v1/execution").methods(crow::HTTPMethod::POST)([](const crow::request& req) {
+    auto body{ crow::json::load(req.body) };
+
+    if (!body.has("data"))
+      return crow::response{ 400 };
+
+    auto program{ body["data"].s() };
+
+    std::string transpilation_output{};
+    bool ok = cat::transpile(program, transpilation_output);
+
+    if (!ok)
       {
-        std::string output{};
-        cat::transpile(body["data"].s(), output);
-        payload["data"] = output;
-      }
-    else
-      {
-        payload["error"] = "Invalid payload, expected expression in 'data' key";
-        status_code = 400;
+        CROW_LOG_INFO << "Transpilation had errors, omitting program execution\n";
+        return crow::response{ 200, transpilation_output };
       }
 
-    return crow::response{ status_code, payload };
+    // FIXME: this returns empty for some reason.
+    // Probably the file descriptor is not getting correctly duped due to being
+    // running as part of a server.
+    return crow::response{ 200, cat::execute(transpilation_output) };
   });
 
   std::string port{ "8080" };

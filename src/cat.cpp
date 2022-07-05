@@ -89,6 +89,7 @@ execute(const std::string& program)
 
   char buf[100];
   std::string output{};
+
   while (read(pipefd[0], buf, sizeof(buf)) > 0)
     output += buf;
 
