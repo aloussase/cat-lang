@@ -314,29 +314,32 @@ namespace crow
       {"avi", "video/x-msvideo"}};
 }
 
-#include <boost/asio.hpp>
-#ifdef CROW_ENABLE_SSL
-#include <boost/asio/ssl.hpp>
+#ifndef ASIO_STANDALONE
+#define ASIO_STANDALONE
 #endif
-#if BOOST_VERSION >= 107000
-#define GET_IO_SERVICE(s) ((boost::asio::io_context&)(s).get_executor().context())
+#include <asio.hpp>
+#ifdef CROW_ENABLE_SSL
+#include <asio/ssl.hpp>
+#endif
+#include <asio/version.hpp>
+#if ASIO_VERSION >= 101300 // 1.13.0
+#define GET_IO_SERVICE(s) ((asio::io_context&)(s).get_executor().context())
 #else
 #define GET_IO_SERVICE(s) ((s).get_io_service())
 #endif
 namespace crow
 {
-    using namespace boost;
     using tcp = asio::ip::tcp;
 
     /// A wrapper for the asio::ip::tcp::socket and asio::ssl::stream
     struct SocketAdaptor
     {
         using context = void;
-        SocketAdaptor(boost::asio::io_service& io_service, context*):
+        SocketAdaptor(asio::io_service& io_service, context*):
           socket_(io_service)
         {}
 
-        boost::asio::io_service& get_io_service()
+        asio::io_service& get_io_service()
         {
             return GET_IO_SERVICE(socket_);
         }
@@ -365,32 +368,32 @@ namespace crow
 
         void close()
         {
-            boost::system::error_code ec;
+            asio::error_code ec;
             socket_.close(ec);
         }
 
         void shutdown_readwrite()
         {
-            boost::system::error_code ec;
-            socket_.shutdown(boost::asio::socket_base::shutdown_type::shutdown_both, ec);
+            asio::error_code ec;
+            socket_.shutdown(asio::socket_base::shutdown_type::shutdown_both, ec);
         }
 
         void shutdown_write()
         {
-            boost::system::error_code ec;
-            socket_.shutdown(boost::asio::socket_base::shutdown_type::shutdown_send, ec);
+            asio::error_code ec;
+            socket_.shutdown(asio::socket_base::shutdown_type::shutdown_send, ec);
         }
 
         void shutdown_read()
         {
-            boost::system::error_code ec;
-            socket_.shutdown(boost::asio::socket_base::shutdown_type::shutdown_receive, ec);
+            asio::error_code ec;
+            socket_.shutdown(asio::socket_base::shutdown_type::shutdown_receive, ec);
         }
 
         template<typename F>
         void start(F f)
         {
-            f(boost::system::error_code());
+            f(asio::error_code());
         }
 
         tcp::socket socket_;
@@ -399,13 +402,13 @@ namespace crow
 #ifdef CROW_ENABLE_SSL
     struct SSLAdaptor
     {
-        using context = boost::asio::ssl::context;
-        using ssl_socket_t = boost::asio::ssl::stream<tcp::socket>;
-        SSLAdaptor(boost::asio::io_service& io_service, context* ctx):
+        using context = asio::ssl::context;
+        using ssl_socket_t = asio::ssl::stream<tcp::socket>;
+        SSLAdaptor(asio::io_service& io_service, context* ctx):
           ssl_socket_(new ssl_socket_t(io_service, *ctx))
         {}
 
-        boost::asio::ssl::stream<tcp::socket>& socket()
+        asio::ssl::stream<tcp::socket>& socket()
         {
             return *ssl_socket_;
         }
@@ -430,7 +433,7 @@ namespace crow
         {
             if (is_open())
             {
-                boost::system::error_code ec;
+                asio::error_code ec;
                 raw_socket().close(ec);
             }
         }
@@ -439,8 +442,8 @@ namespace crow
         {
             if (is_open())
             {
-                boost::system::error_code ec;
-                raw_socket().shutdown(boost::asio::socket_base::shutdown_type::shutdown_both, ec);
+                asio::error_code ec;
+                raw_socket().shutdown(asio::socket_base::shutdown_type::shutdown_both, ec);
             }
         }
 
@@ -448,8 +451,8 @@ namespace crow
         {
             if (is_open())
             {
-                boost::system::error_code ec;
-                raw_socket().shutdown(boost::asio::socket_base::shutdown_type::shutdown_send, ec);
+                asio::error_code ec;
+                raw_socket().shutdown(asio::socket_base::shutdown_type::shutdown_send, ec);
             }
         }
 
@@ -457,12 +460,12 @@ namespace crow
         {
             if (is_open())
             {
-                boost::system::error_code ec;
-                raw_socket().shutdown(boost::asio::socket_base::shutdown_type::shutdown_receive, ec);
+                asio::error_code ec;
+                raw_socket().shutdown(asio::socket_base::shutdown_type::shutdown_receive, ec);
             }
         }
 
-        boost::asio::io_service& get_io_service()
+        asio::io_service& get_io_service()
         {
             return GET_IO_SERVICE(raw_socket());
         }
@@ -470,13 +473,13 @@ namespace crow
         template<typename F>
         void start(F f)
         {
-            ssl_socket_->async_handshake(boost::asio::ssl::stream_base::server,
-                                         [f](const boost::system::error_code& ec) {
+            ssl_socket_->async_handshake(asio::ssl::stream_base::server,
+                                         [f](const asio::error_code& ec) {
                                              f(ec);
                                          });
         }
 
-        std::unique_ptr<boost::asio::ssl::stream<tcp::socket>> ssl_socket_;
+        std::unique_ptr<asio::ssl::stream<tcp::socket>> ssl_socket_;
     };
 #endif
 } // namespace crow
@@ -487,8 +490,10 @@ namespace crow
 #include <tuple>
 #include <type_traits>
 #include <cstring>
+#include <cctype>
 #include <functional>
 #include <string>
+#include <sstream>
 #include <unordered_map>
 
 
@@ -981,7 +986,6 @@ namespace crow
         {
             static constexpr auto value = get_index_of_element_from_tuple_by_type_impl<T, N + 1, Args...>::value;
         };
-
     } // namespace detail
 
     namespace utility
@@ -1261,6 +1265,91 @@ namespace crow
             }
         }
 
+        /**
+         * @brief Checks two string for equality.
+         * Always returns false if strings differ in size.
+         * Defaults to case-insensitive comparison.
+         */
+        inline static bool string_equals(const std::string& l, const std::string& r, bool case_sensitive = false)
+        {
+            if (l.length() != r.length())
+                return false;
+
+            for (size_t i = 0; i < l.length(); i++)
+            {
+                if (case_sensitive)
+                {
+                    if (l[i] != r[i])
+                        return false;
+                }
+                else
+                {
+                    if (std::toupper(l[i]) != std::toupper(r[i]))
+                        return false;
+                }
+            }
+
+            return true;
+        }
+
+        template<typename T, typename U>
+        inline static T lexical_cast(const U& v)
+        {
+            std::stringstream stream;
+            T res;
+
+            stream << v;
+            stream >> res;
+
+            return res;
+        }
+
+        template<typename T>
+        inline static T lexical_cast(const char* v, size_t count)
+        {
+            std::stringstream stream;
+            T res;
+
+            stream.write(v, count);
+            stream >> res;
+
+            return res;
+        }
+
+
+        /// Return a copy of the given string with its
+        /// leading and trailing whitespaces removed.
+        inline static std::string trim(const std::string& v)
+        {
+            if (v.empty())
+                return "";
+
+            size_t begin = 0, end = v.length();
+
+            size_t i;
+            for (i = 0; i < v.length(); i++)
+            {
+                if (!std::isspace(v[i]))
+                {
+                    begin = i;
+                    break;
+                }
+            }
+
+            if (i == v.length())
+                return "";
+
+            for (i = v.length(); i > 0; i--)
+            {
+                if (!std::isspace(v[i - 1]))
+                {
+                    end = i;
+                    break;
+                }
+            }
+
+            return v.substr(begin, end - begin);
+        }
     } // namespace utility
 } // namespace crow
 
@@ -1610,10 +1699,7 @@ constexpr crow::HTTPMethod operator"" _method(const char* str, size_t /*len*/)
  */
 
 // clang-format off
-namespace crow
-{
 extern "C" {
-
 #include <stddef.h>
 #if defined(_WIN32) && !defined(__MINGW32__) && \
   (!defined(_MSC_VER) || _MSC_VER<1600) && !defined(__WINE__)
@@ -1631,9 +1717,14 @@ typedef unsigned __int64 uint64_t;
 #else
 #include <stdint.h>
 #endif
+#include <assert.h>
+#include <ctype.h>
+#include <string.h>
+#include <limits.h>
+}
 
-
-
+namespace crow
+{
 /* Maximium header size allowed. If the macro is not defined
  * before including this header then the default is used. To
  * change the maximum header size, define the macro in the build
@@ -1784,12 +1875,6 @@ enum http_errno {
 
 
 // SOURCE (.c) CODE
-#include <assert.h>
-#include <stddef.h>
-#include <ctype.h>
-#include <string.h>
-#include <limits.h>
-
 static uint32_t max_header_size = CROW_HTTP_MAX_HEADER_SIZE;
 
 #ifndef CROW_ULLONG_MAX
@@ -3608,13 +3693,11 @@ http_parser_set_max_header_size(uint32_t size) {
 #undef CROW_NEW_MESSAGE
 
 }
-}
 
 // clang-format on
 
 
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/functional/hash.hpp>
+#include <locale>
 #include <unordered_map>
 
 namespace crow
@@ -3628,11 +3711,16 @@ namespace crow
             std::locale locale;
 
             for (auto c : key)
-            {
-                boost::hash_combine(seed, std::toupper(c, locale));
-            }
+                hash_combine(seed, std::toupper(c, locale));
 
             return seed;
+        }
+
+    private:
+        static inline void hash_combine(std::size_t& seed, char v)
+        {
+            std::hash<char> hasher;
+            seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
         }
     };
 
@@ -3641,7 +3729,7 @@ namespace crow
     {
         bool operator()(const std::string& l, const std::string& r) const
         {
-            return boost::iequals(l, r);
+            return utility::string_equals(l, r);
         }
     };
 
@@ -3871,7 +3959,7 @@ namespace crow
 #include <vector>
 #include <unordered_map>
 #include <iostream>
-#include <boost/optional.hpp>
+#include <memory>
 
 namespace crow
 {
@@ -3984,11 +4072,10 @@ inline int qs_parse(char* qs, char* qs_kv[], int qs_kv_size, bool parse_url = tr
     {
         qs_kv[i] = substr_ptr;
         j = strcspn(substr_ptr, "&");
-        if ( substr_ptr[j] == '\0' ) {  break;  }
+        if ( substr_ptr[j] == '\0' ) { i++; break;  } // x &'s -> means x iterations of this loop -> means *x+1* k/v pairs
         substr_ptr += j + 1;
         i++;
     }
-    i++;  // x &'s -> means x iterations of this loop -> means *x+1* k/v pairs
 
     // we only decode the values in place, the keys could have '='s in them
     // which will hose our ability to distinguish keys from values later
@@ -4059,7 +4146,7 @@ inline char * qs_k2v(const char * key, char * const * qs_kv, int qs_kv_size, int
             // return (zero-char value) ? ptr to trailing '\0' : ptr to value
             if(nth == 0)
                 return qs_kv[i] + skip;
-            else 
+            else
                 --nth;
         }
     }
@@ -4068,7 +4155,7 @@ inline char * qs_k2v(const char * key, char * const * qs_kv, int qs_kv_size, int
     return nullptr;
 }
 
-inline boost::optional<std::pair<std::string, std::string>> qs_dict_name2kv(const char * dict_name, char * const * qs_kv, int qs_kv_size, int nth = 0)
+inline std::unique_ptr<std::pair<std::string, std::string>> qs_dict_name2kv(const char * dict_name, char * const * qs_kv, int qs_kv_size, int nth = 0)
 {
     int i;
     size_t name_len, skip_to_eq, skip_to_brace_open, skip_to_brace_close;
@@ -4097,7 +4184,7 @@ inline boost::optional<std::pair<std::string, std::string>> qs_dict_name2kv(cons
             {
                 auto key = std::string(qs_kv[i] + skip_to_brace_open, skip_to_brace_close - skip_to_brace_open);
                 auto value = std::string(qs_kv[i] + skip_to_eq);
-                return boost::make_optional(std::make_pair(key, value));
+                return std::unique_ptr<std::pair<std::string, std::string>>(new std::pair<std::string, std::string>(key, value));
             }
             else
             {
@@ -4107,7 +4194,7 @@ inline boost::optional<std::pair<std::string, std::string>> qs_dict_name2kv(cons
     }
 #endif  // _qsSORTING
 
-    return boost::none;
+    return nullptr;
 }
 
 
@@ -4519,7 +4606,12 @@ namespace crow
     crow::logger(crow::LogLevel::Debug)
 
 
-#include <boost/asio.hpp>
+#ifndef ASIO_STANDALONE
+#define ASIO_STANDALONE
+#endif
+#include <asio.hpp>
+#include <asio/basic_waitable_timer.hpp>
+
 #include <chrono>
 #include <functional>
 #include <map>
@@ -4543,15 +4635,15 @@ namespace crow
             using time_type = clock_type::time_point;
 
         public:
-            task_timer(boost::asio::io_service& io_service):
-              io_service_(io_service), deadline_timer_(io_service_)
+            task_timer(asio::io_service& io_service):
+              io_service_(io_service), timer_(io_service_)
             {
-                deadline_timer_.expires_from_now(boost::posix_time::seconds(1));
-                deadline_timer_.async_wait(
+                timer_.expires_after(std::chrono::seconds(1));
+                timer_.async_wait(
                   std::bind(&task_timer::tick_handler, this, std::placeholders::_1));
             }
 
-            ~task_timer() { deadline_timer_.cancel(); }
+            ~task_timer() { timer_.cancel(); }
 
             void cancel(identifier_type id)
             {
@@ -4625,21 +4717,21 @@ namespace crow
                 if (tasks_.empty()) highest_id_ = 0;
             }
 
-            void tick_handler(const boost::system::error_code& ec)
+            void tick_handler(const asio::error_code& ec)
             {
                 if (ec) return;
 
                 process_tasks();
 
-                deadline_timer_.expires_from_now(boost::posix_time::seconds(1));
-                deadline_timer_.async_wait(
+                timer_.expires_after(std::chrono::seconds(1));
+                timer_.async_wait(
                   std::bind(&task_timer::tick_handler, this, std::placeholders::_1));
             }
 
         private:
             std::uint8_t default_timeout_{5};
-            boost::asio::io_service& io_service_;
-            boost::asio::deadline_timer deadline_timer_;
+            asio::io_service& io_service_;
+            asio::basic_waitable_timer<clock_type> timer_;
             std::map<identifier_type, std::pair<time_type, task_type>> tasks_;
 
             // A continuosly increasing number to be issued to threads to identify them.
@@ -4662,9 +4754,6 @@ namespace crow
 #include <iostream>
 #include <algorithm>
 #include <memory>
-#include <boost/lexical_cast.hpp>
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/operators.hpp>
 #include <vector>
 #include <cmath>
 
@@ -4763,7 +4852,7 @@ namespace crow
         namespace detail
         {
             /// A read string implementation with comparison functionality.
-            struct r_string : boost::less_than_comparable<r_string>, boost::less_than_comparable<r_string, std::string>, boost::equality_comparable<r_string>, boost::equality_comparable<r_string, std::string>
+            struct r_string
             {
                 r_string(){};
                 r_string(char* s, char* e):
@@ -4832,31 +4921,85 @@ namespace crow
                     owned_ = 1;
                 }
                 friend rvalue crow::json::load(const char* data, size_t size);
+
+                friend bool operator==(const r_string& l, const r_string& r);
+                friend bool operator==(const std::string& l, const r_string& r);
+                friend bool operator==(const r_string& l, const std::string& r);
+
+                template<typename T, typename U>
+                inline static bool equals(const T& l, const U& r)
+                {
+                    if (l.size() != r.size())
+                        return false;
+
+                    for (size_t i = 0; i < l.size(); i++)
+                    {
+                        if (*(l.begin() + i) != *(r.begin() + i))
+                            return false;
+                    }
+
+                    return true;
+                }
             };
 
             inline bool operator<(const r_string& l, const r_string& r)
             {
-                return boost::lexicographical_compare(l, r);
+                return std::lexicographical_compare(l.begin(), l.end(), r.begin(), r.end());
             }
 
             inline bool operator<(const r_string& l, const std::string& r)
             {
-                return boost::lexicographical_compare(l, r);
+                return std::lexicographical_compare(l.begin(), l.end(), r.begin(), r.end());
+            }
+
+            inline bool operator<(const std::string& l, const r_string& r)
+            {
+                return std::lexicographical_compare(l.begin(), l.end(), r.begin(), r.end());
+            }
+
+            inline bool operator>(const r_string& l, const r_string& r)
+            {
+                return std::lexicographical_compare(l.begin(), l.end(), r.begin(), r.end());
             }
 
             inline bool operator>(const r_string& l, const std::string& r)
             {
-                return boost::lexicographical_compare(r, l);
+                return std::lexicographical_compare(l.begin(), l.end(), r.begin(), r.end());
+            }
+
+            inline bool operator>(const std::string& l, const r_string& r)
+            {
+                return std::lexicographical_compare(l.begin(), l.end(), r.begin(), r.end());
             }
 
             inline bool operator==(const r_string& l, const r_string& r)
             {
-                return boost::equals(l, r);
+                return r_string::equals(l, r);
             }
 
             inline bool operator==(const r_string& l, const std::string& r)
             {
-                return boost::equals(l, r);
+                return r_string::equals(l, r);
+            }
+
+            inline bool operator==(const std::string& l, const r_string& r)
+            {
+                return r_string::equals(l, r);
+            }
+
+            inline bool operator!=(const r_string& l, const r_string& r)
+            {
+                return !(l == r);
+            }
+
+            inline bool operator!=(const r_string& l, const std::string& r)
+            {
+                return !(l == r);
+            }
+
+            inline bool operator!=(const std::string& l, const r_string& r)
+            {
+                return !(l == r);
             }
         } // namespace detail
 
@@ -4995,13 +5138,13 @@ namespace crow
                 {
                     case type::Number:
                     case type::String:
-                        return boost::lexical_cast<int64_t>(start_, end_ - start_);
+                        return utility::lexical_cast<int64_t>(start_, end_ - start_);
                     default:
                         const std::string msg = "expected number, got: " + std::string(get_type_str(t()));
                         throw std::runtime_error(msg);
                 }
 #endif
-                return boost::lexical_cast<int64_t>(start_, end_ - start_);
+                return utility::lexical_cast<int64_t>(start_, end_ - start_);
             }
 
             /// The unsigned integer value.
@@ -5012,12 +5155,12 @@ namespace crow
                 {
                     case type::Number:
                     case type::String:
-                        return boost::lexical_cast<uint64_t>(start_, end_ - start_);
+                        return utility::lexical_cast<uint64_t>(start_, end_ - start_);
                     default:
                         throw std::runtime_error(std::string("expected number, got: ") + get_type_str(t()));
                 }
 #endif
-                return boost::lexical_cast<uint64_t>(start_, end_ - start_);
+                return utility::lexical_cast<uint64_t>(start_, end_ - start_);
             }
 
             /// The double precision floating-point number value.
@@ -5027,7 +5170,7 @@ namespace crow
                 if (t() != type::Number)
                     throw std::runtime_error("value is not number");
 #endif
-                return boost::lexical_cast<double>(start_, end_ - start_);
+                return utility::lexical_cast<double>(start_, end_ - start_);
             }
 
             /// The boolean value.
@@ -5276,7 +5419,7 @@ namespace crow
                 return (option_ & error_bit) != 0;
             }
 
-            std::vector<std::string> keys()
+            std::vector<std::string> keys() const
             {
 #ifndef CROW_JSON_NO_ERROR_CHECK
                 if (t() != type::Object)
@@ -5614,8 +5757,8 @@ namespace crow
                                 {
                                     state = NumberParsingState::ZeroFirst;
                                 }
-                                else if (state == NumberParsingState::Digits || 
-                                    state == NumberParsingState::DigitsAfterE || 
+                                else if (state == NumberParsingState::Digits ||
+                                    state == NumberParsingState::DigitsAfterE ||
                                     state == NumberParsingState::DigitsAfterPoints)
                                 {
                                     // ok; pass
@@ -5643,8 +5786,8 @@ namespace crow
                                 {
                                     state = NumberParsingState::Digits;
                                 }
-                                else if (state == NumberParsingState::Digits || 
-                                    state == NumberParsingState::DigitsAfterE || 
+                                else if (state == NumberParsingState::Digits ||
+                                    state == NumberParsingState::DigitsAfterE ||
                                     state == NumberParsingState::DigitsAfterPoints)
                                 {
                                     // ok; pass
@@ -5692,12 +5835,12 @@ namespace crow
                             case 'e':
                             case 'E':
                                 state = static_cast<NumberParsingState>("\7\7\7\5\5\7\7"[state]);
-                                /*if (state == NumberParsingState::Digits || 
+                                /*if (state == NumberParsingState::Digits ||
                                     state == NumberParsingState::DigitsAfterPoints)
                                 {
                                     state = NumberParsingState::E;
                                 }
-                                else 
+                                else
                                     return {};*/
                                 break;
                             default:
@@ -6068,6 +6211,7 @@ namespace crow
             wvalue& operator=(wvalue&& r)
             {
                 t_ = r.t_;
+                nt = r.nt;
                 num = r.num;
                 s = std::move(r.s);
                 l = std::move(r.l);
@@ -6430,12 +6574,12 @@ namespace crow
                             enum
                             {
                                 start,
-                                decp,
+                                decp, // Decimal point
                                 zero
                             } f_state;
                             char outbuf[128];
                             MSC_COMPATIBLE_SPRINTF(outbuf, "%f", v.num.d);
-                            char *p = &outbuf[0], *o = nullptr;
+                            char *p = &outbuf[0], *o = nullptr; // o is the position of the first trailing 0
                             f_state = start;
                             while (*p != '\0')
                             {
@@ -6443,15 +6587,17 @@ namespace crow
                                 char ch = *p;
                                 switch (f_state)
                                 {
-                                    case start:
+                                    case start: // Loop and lookahead until a decimal point is found
                                         if (ch == '.')
                                         {
-                                            if (p + 1 && *(p + 1) == '0') p++;
+                                            char fch = *(p + 1);
+                                            // if the first character is 0, leave it be (this is so that "1.00000" becomes "1.0" and not "1.")
+                                            if (fch != '\0' && fch == '0') p++;
                                             f_state = decp;
                                         }
                                         p++;
                                         break;
-                                    case decp:
+                                    case decp: // Loop until a 0 is found, if found, record its position
                                         if (ch == '0')
                                         {
                                             f_state = zero;
@@ -6459,7 +6605,7 @@ namespace crow
                                         }
                                         p++;
                                         break;
-                                    case zero:
+                                    case zero: // if a non 0 is found (e.g. 1.00004) remove the earlier recorded 0 position and look for more trailing 0s
                                         if (ch != '0')
                                         {
                                             o = nullptr;
@@ -6469,7 +6615,7 @@ namespace crow
                                         break;
                                 }
                             }
-                            if (o != nullptr)
+                            if (o != nullptr) // if any trailing 0s are found, terminate the string where they begin
                                 *o = '\0';
                             out += outbuf;
 #undef MSC_COMPATIBLE_SPRINTF
@@ -6544,7 +6690,7 @@ namespace crow
 
 
 
-        //std::vector<boost::asio::const_buffer> dump_ref(wvalue& v)
+        //std::vector<asio::const_buffer> dump_ref(wvalue& v)
         //{
         //}
     } // namespace json
@@ -6805,7 +6951,7 @@ namespace crow
                                 }
                                 break;
                                 default:
-                                    throw std::runtime_error("not implemented tag type" + boost::lexical_cast<std::string>(static_cast<int>(ctx.t())));
+                                    throw std::runtime_error("not implemented tag type" + utility::lexical_cast<std::string>(static_cast<int>(ctx.t())));
                             }
                         }
                         break;
@@ -6871,7 +7017,7 @@ namespace crow
                                     current = action.pos;
                                     break;
                                 default:
-                                    throw std::runtime_error("{{#: not implemented context type: " + boost::lexical_cast<std::string>(static_cast<int>(ctx.t())));
+                                    throw std::runtime_error("{{#: not implemented context type: " + utility::lexical_cast<std::string>(static_cast<int>(ctx.t())));
                                     break;
                             }
                             break;
@@ -6880,7 +7026,7 @@ namespace crow
                             stack.pop_back();
                             break;
                         default:
-                            throw std::runtime_error("not implemented " + boost::lexical_cast<std::string>(static_cast<int>(action.t)));
+                            throw std::runtime_error("not implemented " + utility::lexical_cast<std::string>(static_cast<int>(action.t)));
                     }
                     current++;
                 }
@@ -7277,7 +7423,10 @@ namespace crow
 }
 
 
-#include <boost/asio.hpp>
+#ifndef ASIO_STANDALONE
+#define ASIO_STANDALONE
+#endif
+#include <asio.hpp>
 
 
 namespace crow
@@ -7309,7 +7458,7 @@ namespace crow
 
         void* middleware_context{};
         void* middleware_container{};
-        boost::asio::io_service* io_service{};
+        asio::io_service* io_service{};
 
         /// Construct an empty request. (sets the method to `GET`)
         request():
@@ -7361,8 +7510,7 @@ namespace crow
     };
 } // namespace crow
 
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/array.hpp>
+#include <array>
 
 namespace crow
 {
@@ -7433,7 +7581,7 @@ namespace crow
                        std::function<void(crow::websocket::connection&)> open_handler,
                        std::function<void(crow::websocket::connection&, const std::string&, bool)> message_handler,
                        std::function<void(crow::websocket::connection&, const std::string&)> close_handler,
-                       std::function<void(crow::websocket::connection&)> error_handler,
+                       std::function<void(crow::websocket::connection&, const std::string&)> error_handler,
                        std::function<bool(const crow::request&, void**)> accept_handler):
               adaptor_(std::move(adaptor)),
               handler_(handler),
@@ -7444,7 +7592,7 @@ namespace crow
               error_handler_(std::move(error_handler)),
               accept_handler_(std::move(accept_handler))
             {
-                if (!boost::iequals(req.get_header_value("upgrade"), "websocket"))
+                if (!utility::string_equals(req.get_header_value("upgrade"), "websocket"))
                 {
                     adaptor.close();
                     handler_->remove_websocket(this);
@@ -7640,12 +7788,12 @@ namespace crow
                     case WebSocketReadState::MiniHeader:
                     {
                         mini_header_ = 0;
-                        //boost::asio::async_read(adaptor_.socket(), boost::asio::buffer(&mini_header_, 1),
+                        //asio::async_read(adaptor_.socket(), asio::buffer(&mini_header_, 1),
                         adaptor_.socket().async_read_some(
-                          boost::asio::buffer(&mini_header_, 2),
-                          [this](const boost::system::error_code& ec, std::size_t
+                          asio::buffer(&mini_header_, 2),
+                          [this](const asio::error_code& ec, std::size_t
 #ifdef CROW_ENABLE_DEBUG
-                                                                        bytes_transferred
+                                                               bytes_transferred
 #endif
                           )
 
@@ -7673,7 +7821,7 @@ namespace crow
                                       adaptor_.shutdown_readwrite();
                                       adaptor_.close();
                                       if (error_handler_)
-                                          error_handler_(*this);
+                                          error_handler_(*this, "Client connection not masked.");
                                       check_destroy();
 #endif
                                   }
@@ -7699,7 +7847,7 @@ namespace crow
                                   adaptor_.shutdown_readwrite();
                                   adaptor_.close();
                                   if (error_handler_)
-                                      error_handler_(*this);
+                                      error_handler_(*this, ec.message());
                                   check_destroy();
                               }
                           });
@@ -7709,11 +7857,11 @@ namespace crow
                     {
                         remaining_length_ = 0;
                         remaining_length16_ = 0;
-                        boost::asio::async_read(
-                          adaptor_.socket(), boost::asio::buffer(&remaining_length16_, 2),
-                          [this](const boost::system::error_code& ec, std::size_t
+                        asio::async_read(
+                          adaptor_.socket(), asio::buffer(&remaining_length16_, 2),
+                          [this](const asio::error_code& ec, std::size_t
 #ifdef CROW_ENABLE_DEBUG
-                                                                        bytes_transferred
+                                                               bytes_transferred
 #endif
                           ) {
                               is_reading = false;
@@ -7737,7 +7885,7 @@ namespace crow
                                   adaptor_.shutdown_readwrite();
                                   adaptor_.close();
                                   if (error_handler_)
-                                      error_handler_(*this);
+                                      error_handler_(*this, ec.message());
                                   check_destroy();
                               }
                           });
@@ -7745,11 +7893,11 @@ namespace crow
                     break;
                     case WebSocketReadState::Len64:
                     {
-                        boost::asio::async_read(
-                          adaptor_.socket(), boost::asio::buffer(&remaining_length_, 8),
-                          [this](const boost::system::error_code& ec, std::size_t
+                        asio::async_read(
+                          adaptor_.socket(), asio::buffer(&remaining_length_, 8),
+                          [this](const asio::error_code& ec, std::size_t
 #ifdef CROW_ENABLE_DEBUG
-                                                                        bytes_transferred
+                                                               bytes_transferred
 #endif
                           ) {
                               is_reading = false;
@@ -7772,7 +7920,7 @@ namespace crow
                                   adaptor_.shutdown_readwrite();
                                   adaptor_.close();
                                   if (error_handler_)
-                                      error_handler_(*this);
+                                      error_handler_(*this, ec.message());
                                   check_destroy();
                               }
                           });
@@ -7784,16 +7932,16 @@ namespace crow
                             close_connection_ = true;
                             adaptor_.close();
                             if (error_handler_)
-                                error_handler_(*this);
+                                error_handler_(*this, "Message length exceeds maximum paylaod.");
                             check_destroy();
                         }
                         else if (has_mask_)
                         {
-                            boost::asio::async_read(
-                              adaptor_.socket(), boost::asio::buffer((char*)&mask_, 4),
-                              [this](const boost::system::error_code& ec, std::size_t
+                            asio::async_read(
+                              adaptor_.socket(), asio::buffer((char*)&mask_, 4),
+                              [this](const asio::error_code& ec, std::size_t
 #ifdef CROW_ENABLE_DEBUG
-                                                                            bytes_transferred
+                                                                   bytes_transferred
 #endif
                               ) {
                                   is_reading = false;
@@ -7813,7 +7961,7 @@ namespace crow
                                   {
                                       close_connection_ = true;
                                       if (error_handler_)
-                                          error_handler_(*this);
+                                          error_handler_(*this, ec.message());
                                       adaptor_.shutdown_readwrite();
                                       adaptor_.close();
                                       check_destroy();
@@ -7832,8 +7980,8 @@ namespace crow
                         if (remaining_length_ < to_read)
                             to_read = remaining_length_;
                         adaptor_.socket().async_read_some(
-                          boost::asio::buffer(buffer_, static_cast<std::size_t>(to_read)),
-                          [this](const boost::system::error_code& ec, std::size_t bytes_transferred) {
+                          asio::buffer(buffer_, static_cast<std::size_t>(to_read)),
+                          [this](const asio::error_code& ec, std::size_t bytes_transferred) {
                               is_reading = false;
 
                               if (!ec)
@@ -7855,7 +8003,7 @@ namespace crow
                               {
                                   close_connection_ = true;
                                   if (error_handler_)
-                                      error_handler_(*this);
+                                      error_handler_(*this, ec.message());
                                   adaptor_.shutdown_readwrite();
                                   adaptor_.close();
                                   check_destroy();
@@ -7976,15 +8124,15 @@ namespace crow
                 if (sending_buffers_.empty())
                 {
                     sending_buffers_.swap(write_buffers_);
-                    std::vector<boost::asio::const_buffer> buffers;
+                    std::vector<asio::const_buffer> buffers;
                     buffers.reserve(sending_buffers_.size());
                     for (auto& s : sending_buffers_)
                     {
-                        buffers.emplace_back(boost::asio::buffer(s));
+                        buffers.emplace_back(asio::buffer(s));
                     }
-                    boost::asio::async_write(
+                    asio::async_write(
                       adaptor_.socket(), buffers,
-                      [&](const boost::system::error_code& ec, std::size_t /*bytes_transferred*/) {
+                      [&](const asio::error_code& ec, std::size_t /*bytes_transferred*/) {
                           sending_buffers_.clear();
                           if (!ec && !close_connection_)
                           {
@@ -8021,7 +8169,7 @@ namespace crow
             std::vector<std::string> sending_buffers_;
             std::vector<std::string> write_buffers_;
 
-            boost::array<char, 4096> buffer_;
+            std::array<char, 4096> buffer_;
             bool is_binary_;
             std::string message_;
             std::string fragment_;
@@ -8043,7 +8191,7 @@ namespace crow
             std::function<void(crow::websocket::connection&)> open_handler_;
             std::function<void(crow::websocket::connection&, const std::string&, bool)> message_handler_;
             std::function<void(crow::websocket::connection&, const std::string&)> close_handler_;
-            std::function<void(crow::websocket::connection&)> error_handler_;
+            std::function<void(crow::websocket::connection&, const std::string&)> error_handler_;
             std::function<bool(const crow::request&, void**)> accept_handler_;
         };
     } // namespace websocket
@@ -8320,7 +8468,15 @@ namespace crow
 #include <ios>
 #include <fstream>
 #include <sstream>
+// S_ISREG is not defined for windows
+// This defines it like suggested in https://stackoverflow.com/a/62371749
+#if defined(_MSC_VER)
+#define _CRT_INTERNAL_NONSTDC_NAMES 1
+#endif
 #include <sys/stat.h>
+#if !defined(S_ISREG) && defined(S_IFMT) && defined(S_IFREG)
+#define S_ISREG(m) (((m)&S_IFMT) == S_IFREG)
+#endif
 
 
 
@@ -8388,6 +8544,11 @@ namespace crow
         {
             body = value.dump();
             set_header("Content-Type", value.content_type);
+        }
+        response(int code, returnable&& value):
+          code(code), body(std::move(value.dump()))
+        {
+            set_header("Content-Type", std::move(value.content_type));
         }
 
         response(response&& r)
@@ -8543,7 +8704,7 @@ namespace crow
 #ifdef CROW_ENABLE_COMPRESSION
             compressed = false;
 #endif
-            if (file_info.statResult == 0)
+            if (file_info.statResult == 0 && S_ISREG(file_info.statbuf.st_mode))
             {
                 std::size_t last_dot = path.find_last_of(".");
                 std::string extension = path.substr(last_dot + 1);
@@ -8567,7 +8728,6 @@ namespace crow
             {
                 code = 404;
                 file_info.path.clear();
-                this->end();
             }
         }
 
@@ -8580,8 +8740,7 @@ namespace crow
 } // namespace crow
 
 #include <iomanip>
-#include <boost/optional.hpp>
-#include <boost/algorithm/string/trim.hpp>
+#include <memory>
 
 namespace crow
 {
@@ -8643,7 +8802,7 @@ namespace crow
                 if (expires_at_)
                 {
                     ss << DIVIDER << "Expires="
-                       << std::put_time(expires_at_.get_ptr(), HTTP_DATE_FORMAT);
+                       << std::put_time(expires_at_.get(), HTTP_DATE_FORMAT);
                 }
                 if (max_age_)
                 {
@@ -8671,14 +8830,14 @@ namespace crow
             // Expires attribute
             Cookie& expires(const std::tm& time)
             {
-                expires_at_ = time;
+                expires_at_ = std::unique_ptr<std::tm>(new std::tm(time));
                 return *this;
             }
 
             // Max-Age attribute
             Cookie& max_age(long long seconds)
             {
-                max_age_ = seconds;
+                max_age_ = std::unique_ptr<long long>(new long long(seconds));
                 return *this;
             }
 
@@ -8713,8 +8872,26 @@ namespace crow
             // SameSite attribute
             Cookie& same_site(SameSitePolicy ssp)
             {
-                same_site_ = ssp;
+                same_site_ = std::unique_ptr<SameSitePolicy>(new SameSitePolicy(ssp));
                 return *this;
+            }
+
+            Cookie(const Cookie& c):
+              key_(c.key_),
+              value_(c.value_),
+              domain_(c.domain_),
+              path_(c.path_),
+              secure_(c.secure_),
+              httponly_(c.httponly_)
+            {
+                if (c.max_age_)
+                    max_age_ = std::unique_ptr<long long>(new long long(*c.max_age_));
+
+                if (c.expires_at_)
+                    expires_at_ = std::unique_ptr<std::tm>(new std::tm(*c.expires_at_));
+
+                if (c.same_site_)
+                    same_site_ = std::unique_ptr<SameSitePolicy>(new SameSitePolicy(*c.same_site_));
             }
 
         private:
@@ -8732,13 +8909,13 @@ namespace crow
         private:
             std::string key_;
             std::string value_;
-            boost::optional<long long> max_age_{};
+            std::unique_ptr<long long> max_age_{};
             std::string domain_ = "";
             std::string path_ = "";
             bool secure_ = false;
             bool httponly_ = false;
-            boost::optional<std::tm> expires_at_{};
-            boost::optional<SameSitePolicy> same_site_{};
+            std::unique_ptr<std::tm> expires_at_{};
+            std::unique_ptr<SameSitePolicy> same_site_{};
 
             static constexpr const char* DIVIDER = "; ";
         };
@@ -8785,17 +8962,15 @@ namespace crow
                 if (pos_equal == cookies.npos)
                     break;
                 std::string name = cookies.substr(pos, pos_equal - pos);
-                boost::trim(name);
+                name = utility::trim(name);
                 pos = pos_equal + 1;
-                while (pos < cookies.size() && cookies[pos] == ' ')
-                    pos++;
                 if (pos == cookies.size())
                     break;
 
                 size_t pos_semicolon = cookies.find(';', pos);
                 std::string value = cookies.substr(pos, pos_semicolon - pos);
 
-                boost::trim(value);
+                value = utility::trim(value);
                 if (value[0] == '"' && value[value.size() - 1] == '"')
                 {
                     value = value.substr(1, value.size() - 2);
@@ -8807,8 +8982,6 @@ namespace crow
                 if (pos == cookies.npos)
                     break;
                 pos++;
-                while (pos < cookies.size() && cookies[pos] == ' ')
-                    pos++;
             }
         }
 
@@ -8836,7 +9009,7 @@ namespace crow
     C::handle
         context.aaa
 
-    App::context : private CookieParser::contetx, ... 
+    App::context : private CookieParser::contetx, ...
     {
         jar
 
@@ -9260,7 +9433,6 @@ namespace crow
 #include <tuple>
 #include <unordered_map>
 #include <memory>
-#include <boost/lexical_cast.hpp>
 #include <vector>
 #include <algorithm>
 #include <type_traits>
@@ -9756,7 +9928,7 @@ namespace crow
         std::function<void(crow::websocket::connection&)> open_handler_;
         std::function<void(crow::websocket::connection&, const std::string&, bool)> message_handler_;
         std::function<void(crow::websocket::connection&, const std::string&)> close_handler_;
-        std::function<void(crow::websocket::connection&)> error_handler_;
+        std::function<void(crow::websocket::connection&, const std::string&)> error_handler_;
         std::function<bool(const crow::request&, void**)> accept_handler_;
         uint64_t max_payload_;
         bool max_payload_override_ = false;
@@ -10786,7 +10958,10 @@ namespace crow
                 return;
             else if (req.method == HTTPMethod::Head)
             {
-                method_actual = HTTPMethod::Get;
+                // support HEAD requests using GET if not defined as method for the requested URL
+                if (!std::get<0>(per_methods_[static_cast<int>(HTTPMethod::Head)].trie.find(req.url)))
+                    method_actual = HTTPMethod::Get;
+
                 res.skip_body = true;
             }
             else if (req.method == HTTPMethod::Options)
@@ -10797,6 +10972,9 @@ namespace crow
                 {
                     for (int i = 0; i < static_cast<int>(HTTPMethod::InternalMethodCount); i++)
                     {
+                        if (static_cast<int>(HTTPMethod::Head) == i)
+                            continue; // HEAD is always allowed
+
                         if (!per_methods_[i].trie.is_empty())
                         {
                             allow += method_name(static_cast<HTTPMethod>(i)) + ", ";
@@ -10810,14 +10988,20 @@ namespace crow
                 }
                 else
                 {
+                    bool rules_matched = false;
                     for (int i = 0; i < static_cast<int>(HTTPMethod::InternalMethodCount); i++)
                     {
                         if (std::get<0>(per_methods_[i].trie.find(req.url)))
                         {
+                            rules_matched = true;
+
+                            if (static_cast<int>(HTTPMethod::Head) == i)
+                                continue; // HEAD is always allowed
+
                             allow += method_name(static_cast<HTTPMethod>(i)) + ", ";
                         }
                     }
-                    if (allow != "OPTIONS, HEAD, ")
+                    if (rules_matched)
                     {
                         allow = allow.substr(0, allow.size() - 2);
                         res = response(204);
@@ -11183,7 +11367,6 @@ namespace crow
 
 #include <string>
 #include <unordered_map>
-#include <boost/algorithm/string.hpp>
 #include <algorithm>
 
 
@@ -11369,10 +11552,10 @@ namespace crow
     };
 } // namespace crow
 
-#include <boost/asio.hpp>
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/array.hpp>
+#ifndef ASIO_STANDALONE
+#define ASIO_STANDALONE
+#endif
+#include <asio.hpp>
 #include <atomic>
 #include <chrono>
 #include <vector>
@@ -11380,7 +11563,6 @@ namespace crow
 
 namespace crow
 {
-    using namespace boost;
     using tcp = asio::ip::tcp;
 
 
@@ -11396,7 +11578,7 @@ namespace crow
 
     public:
         Connection(
-          boost::asio::io_service& io_service,
+          asio::io_service& io_service,
           Handler* handler,
           const std::string& server_name,
           std::tuple<Middlewares...>* middlewares,
@@ -11438,7 +11620,7 @@ namespace crow
 
         void start()
         {
-            adaptor_.start([this](const boost::system::error_code& ec) {
+            adaptor_.start([this](const asio::error_code& ec) {
                 if (!ec)
                 {
                     start_deadline();
@@ -11503,7 +11685,7 @@ namespace crow
                 }
             }
 
-            CROW_LOG_INFO << "Request: " << boost::lexical_cast<std::string>(adaptor_.remote_endpoint()) << " " << this << " HTTP/" << (char)(req.http_ver_major + '0') << "." << (char)(req.http_ver_minor + '0') << ' ' << method_name(req.method) << " " << req.url;
+            CROW_LOG_INFO << "Request: " << utility::lexical_cast<std::string>(adaptor_.remote_endpoint()) << " " << this << " HTTP/" << (char)(req.http_ver_major + '0') << "." << (char)(req.http_ver_minor + '0') << ' ' << method_name(req.method) << " " << req.url;
 
 
             need_to_call_after_handlers_ = false;
@@ -11733,7 +11915,7 @@ namespace crow
         void do_write_static()
         {
             is_writing = true;
-            boost::asio::write(adaptor_.socket(), buffers_);
+            asio::write(adaptor_.socket(), buffers_);
 
             if (res.file_info.statResult == 0)
             {
@@ -11742,7 +11924,7 @@ namespace crow
                 while (is.read(buf, sizeof(buf)).gcount() > 0)
                 {
                     std::vector<asio::const_buffer> buffers;
-                    buffers.push_back(boost::asio::buffer(buf));
+                    buffers.push_back(asio::buffer(buf));
                     do_write_sync(buffers);
                 }
             }
@@ -11779,7 +11961,7 @@ namespace crow
             else
             {
                 is_writing = true;
-                boost::asio::write(adaptor_.socket(), buffers_); // Write the response start / headers
+                asio::write(adaptor_.socket(), buffers_); // Write the response start / headers
                 cancel_deadline_timer();
                 if (res.body.length() > 0)
                 {
@@ -11792,7 +11974,7 @@ namespace crow
                         buf = res.body.substr(0, 16384);
                         res.body = res.body.substr(16384);
                         buffers.clear();
-                        buffers.push_back(boost::asio::buffer(buf));
+                        buffers.push_back(asio::buffer(buf));
                         do_write_sync(buffers);
                     }
                     // Collect whatever is left (less than 16KB) and send it down the socket
@@ -11801,7 +11983,7 @@ namespace crow
                     res.body.clear();
 
                     buffers.clear();
-                    buffers.push_back(boost::asio::buffer(buf));
+                    buffers.push_back(asio::buffer(buf));
                     do_write_sync(buffers);
                 }
                 is_writing = false;
@@ -11824,8 +12006,8 @@ namespace crow
             //auto self = this->shared_from_this();
             is_reading = true;
             adaptor_.socket().async_read_some(
-              boost::asio::buffer(buffer_),
-              [this](const boost::system::error_code& ec, std::size_t bytes_transferred) {
+              asio::buffer(buffer_),
+              [this](const asio::error_code& ec, std::size_t bytes_transferred) {
                   bool error_while_reading = true;
                   if (!ec)
                   {
@@ -11871,9 +12053,9 @@ namespace crow
         {
             //auto self = this->shared_from_this();
             is_writing = true;
-            boost::asio::async_write(
+            asio::async_write(
               adaptor_.socket(), buffers_,
-              [&](const boost::system::error_code& ec, std::size_t /*bytes_transferred*/) {
+              [&](const asio::error_code& ec, std::size_t /*bytes_transferred*/) {
                   is_writing = false;
                   res.clear();
                   res_body_copy_.clear();
@@ -11898,7 +12080,7 @@ namespace crow
         inline void do_write_sync(std::vector<asio::const_buffer>& buffers)
         {
 
-            boost::asio::write(adaptor_.socket(), buffers, [&](std::error_code ec, std::size_t) {
+            asio::write(adaptor_.socket(), buffers, [&](asio::error_code ec, std::size_t) {
                 if (!ec)
                 {
                     return false;
@@ -11949,7 +12131,7 @@ namespace crow
         Adaptor adaptor_;
         Handler* handler_;
 
-        boost::array<char, 4096> buffer_;
+        std::array<char, 4096> buffer_;
 
         HTTPParser<Connection> parser_;
         request req_;
@@ -11958,7 +12140,7 @@ namespace crow
         bool close_connection_ = false;
 
         const std::string& server_name_;
-        std::vector<boost::asio::const_buffer> buffers_;
+        std::vector<asio::const_buffer> buffers_;
 
         std::string content_length_;
         std::string date_str_;
@@ -11987,10 +12169,12 @@ namespace crow
 
 
 #include <chrono>
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/asio.hpp>
+#ifndef ASIO_STANDALONE
+#define ASIO_STANDALONE
+#endif
+#include <asio.hpp>
 #ifdef CROW_ENABLE_SSL
-#include <boost/asio/ssl.hpp>
+#include <asio/ssl.hpp>
 #endif
 #include <cstdint>
 #include <atomic>
@@ -12001,7 +12185,6 @@ namespace crow
 
 namespace crow
 {
-    using namespace boost;
     using tcp = asio::ip::tcp;
 
     template<typename Handler, typename Adaptor = SocketAdaptor, typename... Middlewares>
@@ -12009,7 +12192,7 @@ namespace crow
     {
     public:
         Server(Handler* handler, std::string bindaddr, uint16_t port, std::string server_name = std::string("Crow/") + VERSION, std::tuple<Middlewares...>* middlewares = nullptr, uint16_t concurrency = 1, uint8_t timeout = 5, typename Adaptor::context* adaptor_ctx = nullptr):
-          acceptor_(io_service_, tcp::endpoint(boost::asio::ip::address::from_string(bindaddr), port)),
+          acceptor_(io_service_, tcp::endpoint(asio::ip::address::from_string(bindaddr), port)),
           signals_(io_service_),
           tick_timer_(io_service_),
           handler_(handler),
@@ -12032,8 +12215,8 @@ namespace crow
         void on_tick()
         {
             tick_function_();
-            tick_timer_.expires_from_now(boost::posix_time::milliseconds(tick_interval_.count()));
-            tick_timer_.async_wait([this](const boost::system::error_code& ec) {
+            tick_timer_.expires_after(std::chrono::milliseconds(tick_interval_.count()));
+            tick_timer_.async_wait([this](const asio::error_code& ec) {
                 if (ec)
                     return;
                 on_tick();
@@ -12044,7 +12227,7 @@ namespace crow
         {
             uint16_t worker_thread_count = concurrency_ - 1;
             for (int i = 0; i < worker_thread_count; i++)
-                io_service_pool_.emplace_back(new boost::asio::io_service());
+                io_service_pool_.emplace_back(new asio::io_service());
             get_cached_date_str_pool_.resize(worker_thread_count);
             task_timer_pool_.resize(worker_thread_count);
 
@@ -12107,9 +12290,9 @@ namespace crow
 
             if (tick_function_ && tick_interval_.count() > 0)
             {
-                tick_timer_.expires_from_now(boost::posix_time::milliseconds(tick_interval_.count()));
+                tick_timer_.expires_after(std::chrono::milliseconds(tick_interval_.count()));
                 tick_timer_.async_wait(
-                  [this](const boost::system::error_code& ec) {
+                  [this](const asio::error_code& ec) {
                       if (ec)
                           return;
                       on_tick();
@@ -12124,7 +12307,7 @@ namespace crow
             CROW_LOG_INFO << "Call `app.loglevel(crow::LogLevel::Warning)` to hide Info level logs.";
 
             signals_.async_wait(
-              [&](const boost::system::error_code& /*error*/, int /*signal_number*/) {
+              [&](const asio::error_code& /*error*/, int /*signal_number*/) {
                   stop();
               });
 
@@ -12135,6 +12318,7 @@ namespace crow
 
             std::thread(
               [this] {
+                  notify_start();
                   io_service_.run();
                   CROW_LOG_INFO << "Exiting.";
               })
@@ -12155,6 +12339,14 @@ namespace crow
 
             CROW_LOG_INFO << "Closing main IO service (" << &io_service_ << ')';
             io_service_.stop(); // Close main io_service
+        }
+
+        /// Wait until the server has properly started
+        void wait_for_start()
+        {
+            std::unique_lock<std::mutex> lock(start_mutex_);
+            if (!server_started_)
+                cv_started_.wait(lock);
         }
 
         void signal_clear()
@@ -12199,7 +12391,7 @@ namespace crow
 
                 acceptor_.async_accept(
                   p->socket(),
-                  [this, p, &is, service_idx](boost::system::error_code ec) {
+                  [this, p, &is, service_idx](asio::error_code ec) {
                       if (!ec)
                       {
                           is.post(
@@ -12218,6 +12410,14 @@ namespace crow
             }
         }
 
+        /// Notify anything using `wait_for_start()` to proceed
+        void notify_start()
+        {
+            std::unique_lock<std::mutex> lock(start_mutex_);
+            server_started_ = true;
+            cv_started_.notify_all();
+        }
+
     private:
         asio::io_service io_service_;
         std::vector<std::unique_ptr<asio::io_service>> io_service_pool_;
@@ -12225,8 +12425,12 @@ namespace crow
         std::vector<std::function<std::string()>> get_cached_date_str_pool_;
         tcp::acceptor acceptor_;
         bool shutting_down_ = false;
-        boost::asio::signal_set signals_;
-        boost::asio::deadline_timer tick_timer_;
+        bool server_started_{false};
+        std::condition_variable cv_started_;
+        std::mutex start_mutex_;
+        asio::signal_set signals_;
+
+        asio::basic_waitable_timer<std::chrono::high_resolution_clock> tick_timer_;
 
         Handler* handler_;
         uint16_t concurrency_{2};
@@ -12274,7 +12478,7 @@ namespace crow
 namespace crow
 {
 #ifdef CROW_ENABLE_SSL
-    using ssl_context_t = boost::asio::ssl::context;
+    using ssl_context_t = asio::ssl::context;
 #endif
     /// The main server application
 
@@ -12528,14 +12732,6 @@ namespace crow
             }
         }
 
-        /// Notify anything using `wait_for_server_start()` to proceed
-        void notify_server_start()
-        {
-            std::unique_lock<std::mutex> lock(start_mutex_);
-            server_started_ = true;
-            cv_started_.notify_all();
-        }
-
         /// Run the server
         void run()
         {
@@ -12622,12 +12818,12 @@ namespace crow
         self_t& ssl_file(const std::string& crt_filename, const std::string& key_filename)
         {
             ssl_used_ = true;
-            ssl_context_.set_verify_mode(boost::asio::ssl::verify_peer);
-            ssl_context_.set_verify_mode(boost::asio::ssl::verify_client_once);
+            ssl_context_.set_verify_mode(asio::ssl::verify_peer);
+            ssl_context_.set_verify_mode(asio::ssl::verify_client_once);
             ssl_context_.use_certificate_file(crt_filename, ssl_context_t::pem);
             ssl_context_.use_private_key_file(key_filename, ssl_context_t::pem);
             ssl_context_.set_options(
-              boost::asio::ssl::context::default_workarounds | boost::asio::ssl::context::no_sslv2 | boost::asio::ssl::context::no_sslv3);
+              asio::ssl::context::default_workarounds | asio::ssl::context::no_sslv2 | asio::ssl::context::no_sslv3);
             return *this;
         }
 
@@ -12635,11 +12831,11 @@ namespace crow
         self_t& ssl_file(const std::string& pem_filename)
         {
             ssl_used_ = true;
-            ssl_context_.set_verify_mode(boost::asio::ssl::verify_peer);
-            ssl_context_.set_verify_mode(boost::asio::ssl::verify_client_once);
+            ssl_context_.set_verify_mode(asio::ssl::verify_peer);
+            ssl_context_.set_verify_mode(asio::ssl::verify_client_once);
             ssl_context_.load_verify_file(pem_filename);
             ssl_context_.set_options(
-              boost::asio::ssl::context::default_workarounds | boost::asio::ssl::context::no_sslv2 | boost::asio::ssl::context::no_sslv3);
+              asio::ssl::context::default_workarounds | asio::ssl::context::no_sslv2 | asio::ssl::context::no_sslv3);
             return *this;
         }
 
@@ -12647,16 +12843,16 @@ namespace crow
         self_t& ssl_chainfile(const std::string& crt_filename, const std::string& key_filename)
         {
             ssl_used_ = true;
-            ssl_context_.set_verify_mode(boost::asio::ssl::verify_peer);
-            ssl_context_.set_verify_mode(boost::asio::ssl::verify_client_once);
+            ssl_context_.set_verify_mode(asio::ssl::verify_peer);
+            ssl_context_.set_verify_mode(asio::ssl::verify_client_once);
             ssl_context_.use_certificate_chain_file(crt_filename);
             ssl_context_.use_private_key_file(key_filename, ssl_context_t::pem);
             ssl_context_.set_options(
-              boost::asio::ssl::context::default_workarounds | boost::asio::ssl::context::no_sslv2 | boost::asio::ssl::context::no_sslv3);
+              asio::ssl::context::default_workarounds | asio::ssl::context::no_sslv2 | asio::ssl::context::no_sslv3);
             return *this;
         }
 
-        self_t& ssl(boost::asio::ssl::context&& ctx)
+        self_t& ssl(asio::ssl::context&& ctx)
         {
             ssl_used_ = true;
             ssl_context_ = std::move(ctx);
@@ -12727,10 +12923,17 @@ namespace crow
         /// Wait until the server has properly started
         void wait_for_server_start()
         {
-            std::unique_lock<std::mutex> lock(start_mutex_);
-            if (server_started_)
-                return;
-            cv_started_.wait(lock);
+            {
+                std::unique_lock<std::mutex> lock(start_mutex_);
+                if (!server_started_)
+                    cv_started_.wait(lock);
+            }
+            if (server_)
+                server_->wait_for_start();
+#ifdef CROW_ENABLE_SSL
+            else if (ssl_server_)
+                ssl_server_->wait_for_start();
+#endif
         }
 
     private:
@@ -12741,6 +12944,14 @@ namespace crow
             return std::make_tuple(
               std::forward<Middlewares>(
                 black_magic::tuple_extract<Middlewares, decltype(fwd)>(fwd))...);
+        }
+
+        /// Notify anything using `wait_for_server_start()` to proceed
+        void notify_server_start()
+        {
+            std::unique_lock<std::mutex> lock(start_mutex_);
+            server_started_ = true;
+            cv_started_.notify_all();
         }
 
 
@@ -12768,7 +12979,7 @@ namespace crow
 #ifdef CROW_ENABLE_SSL
         std::unique_ptr<ssl_server_t> ssl_server_;
         bool ssl_used_{false};
-        ssl_context_t ssl_context_{boost::asio::ssl::context::sslv23};
+        ssl_context_t ssl_context_{asio::ssl::context::sslv23};
 #endif
 
         std::unique_ptr<server_t> server_;
