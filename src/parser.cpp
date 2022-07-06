@@ -260,13 +260,15 @@ Parser::parse_if_stmt()
 
   auto condition{ parse_expr() };
 
+  const auto unterminated_if_stmt = [this] {
+    auto sync{ error("Expected 'then' after if statement condition", current_span()) };
+    hint("Insert 'then' to start the statement body");
+    return sync;
+  };
+
   // Consume the 'then' keyword
   if (!match("then"))
-    {
-      auto sync{ error("Expected 'then' after if statement condition", current_span()) };
-      hint("Insert 'then' to start the statement body");
-      throw sync;
-    }
+    throw unterminated_if_stmt();
 
   std::vector<Stmt*> ifStmts{};
   std::vector<Stmt*> elseStmts{};
@@ -279,11 +281,7 @@ Parser::parse_if_stmt()
     return new IfStmt{ condition, ifStmts, elseStmts };
 
   if (is_at_end())
-    {
-      auto sync{ error("Expected 'end' after if statement body", current_span()) };
-      hint("Add 'end' to the end of the if statement");
-      throw sync;
-    }
+    throw unterminated_if_stmt();
 
   // Parse the false branch, since we did not see and 'end' above
 
@@ -298,11 +296,7 @@ Parser::parse_if_stmt()
     elseStmts.push_back(parse_stmt());
 
   if (!matched("end"))
-    {
-      auto sync{ error("Unterminated if statement", current_span()) };
-      hint("Add 'end' to the end of the if statement");
-      throw sync;
-    }
+    throw unterminated_if_stmt();
 
   return new IfStmt{ condition, ifStmts, elseStmts };
 }
