@@ -4,29 +4,15 @@
 #include <cassert>
 #include <vector>
 
-#include "node_visitor.hpp"
 #include "Lexer.hpp"
+#include "forward.hpp"
+#include "node_visitor.hpp"
 
 namespace cat
 {
 
 namespace ast
 {
-
-// Forward declarations
-class Node;
-class Program;
-class Stmt;
-class LetStmt;
-class IfStmt;
-class Expr;
-class Identifier;
-class Number;
-class BinaryExpr;
-class AddExpr;
-class SubExpr;
-class MultExpr;
-class AssignExpr;
 
 // Node
 class Node
@@ -114,6 +100,26 @@ private:
   Expr* m_condition;
   std::vector<Stmt*> m_if_branch;
   std::vector<Stmt*> m_else_branch;
+};
+
+// PrintStmt
+class PrintStmt final : public Stmt
+{
+public:
+  PrintStmt(std::vector<Expr*>&& exprs) : m_exprs{ std::move(exprs) } {}
+
+  ~PrintStmt();
+
+  std::any Accept(NodeVisitor&) override;
+
+  [[nodiscard]] std::vector<Expr*>
+  exprs() const noexcept
+  {
+    return m_exprs;
+  }
+
+private:
+  std::vector<Expr*> m_exprs;
 };
 
 // Expr

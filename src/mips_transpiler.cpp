@@ -3,10 +3,10 @@
 #include <iostream>
 #endif
 
-#include "node_visitor.hpp"
 #include "Instruction.hpp"
 #include "MIPSTranspiler.hpp"
 #include "ast.hpp"
+#include "node_visitor.hpp"
 
 #define AS_REGISTER(o) std::any_cast<register_t>(o)
 #define AS_NUMBER(o) static_cast<ast::Number*>(o)
@@ -143,7 +143,7 @@ MIPSTranspiler::undeclared_variable_error(ast::Identifier& identifier)
   m_diagnostics.emplace_back("Unbound variable " + identifier.name(), Span{ 0, 0 });
   std::string hint{ "Maybe you forgot to declare the variable?\n\n" };
   hint += "\t let " + identifier.name() + " := ...";
-  m_diagnostics.push_back({Diagnostic::Severity::HINT, hint, Span{ 0, 0 } });
+  m_diagnostics.push_back({ Diagnostic::Severity::HINT, hint, Span{ 0, 0 } });
 
   throw RuntimeException{};
 }
@@ -242,6 +242,37 @@ MIPSTranspiler::VisitIfStmt(ast::IfStmt& ifStmt)
   emit(exit_if_stmt_label + ":");
 
   leave_scope();
+  return {};
+}
+
+std::any
+MIPSTranspiler::VisitPrintStmt(ast::PrintStmt& stmt)
+{
+  register_t v0{ register_t::name::V0 };
+  register_t a0{ register_t::name::A0 };
+
+  for (const auto& expr : stmt.exprs())
+    {
+      switch (expr->token().type())
+        {
+        case TokenType::CHAR:
+          emit<Instruction::LI>(v0, 11);
+          emit<Instruction::LI>(a0, AS_NUMBER(expr)->value());
+          break;
+        case TokenType::NUMBER:
+          emit<Instruction::LI>(v0, 1);
+          emit<Instruction::LI>(a0, AS_NUMBER(expr)->value());
+          break;
+        default:
+          auto rs{ AS_REGISTER(expr->Accept(*this)) };
+          emit<Instruction::LI>(v0, 1);
+          emit<Instruction::MOVE>(a0, rs);
+          release_register(rs);
+        }
+
+      emit("syscall");
+    }
+
   return {};
 }
 

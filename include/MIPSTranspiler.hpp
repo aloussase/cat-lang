@@ -8,8 +8,8 @@
 #include <unordered_map>
 #include <vector>
 
-#include "node_visitor.hpp"
 #include "diagnostic.hpp"
+#include "node_visitor.hpp"
 
 namespace cat
 {
@@ -121,6 +121,10 @@ public:
         return "$t9";
       case name::SP:
         return "$sp";
+      case name::A0:
+        return "$a0";
+      case name::V0:
+        return "$v0";
       default:
         assert(false && "unhandled register to std::string conversion");
       }
@@ -166,6 +170,7 @@ public:
   std::any VisitStmt(ast::Stmt&) override;
   std::any VisitLetStmt(ast::LetStmt&) override;
   std::any VisitIfStmt(ast::IfStmt&) override;
+  std::any VisitPrintStmt(ast::PrintStmt&) override;
   std::any VisitNumber(ast::Number&) override;
   std::any VisitIdentifier(ast::Identifier&) override;
   std::any VisitAddExpr(ast::AddExpr&) override;

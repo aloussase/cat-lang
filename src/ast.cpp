@@ -75,6 +75,19 @@ IfStmt::Accept(NodeVisitor& visitor)
   return visitor.VisitIfStmt(*this);
 }
 
+// PrintStmt
+PrintStmt::~PrintStmt()
+{
+  for (auto expr : m_exprs)
+    delete expr;
+}
+
+std::any
+PrintStmt::Accept(NodeVisitor& visitor)
+{
+  return visitor.VisitPrintStmt(*this);
+}
+
 // Number
 std::any
 Number::Accept(NodeVisitor& visitor)

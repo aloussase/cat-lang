@@ -71,7 +71,8 @@ private:
   [[nodiscard]] ast::Stmt* parse_stmt();
   [[nodiscard]] ast::LetStmt* parse_let_stmt();
   [[nodiscard]] ast::IfStmt* parse_if_stmt();
-  ast::Expr* parse_expr(int precedence = 0);
+  [[nodiscard]] ast::PrintStmt* parse_print_stmt();
+  [[nodiscard]] ast::Expr* parse_expr(int precedence = 0);
 
   std::optional<PrefixParselet> get_prefix_parselet(TokenType) noexcept;
   std::optional<InfixParselet> get_infix_parselet(TokenType) noexcept;
@@ -88,6 +89,12 @@ private:
   /// Return true if we have reached the end of the token stream.
   [[nodiscard]] bool is_at_end() const noexcept;
 
+  /// Return true and advance the parser if the current token matches the provided token type.
+  [[nodiscard]] bool match(TokenType) noexcept;
+
+  /// Return true if the previous token matches the provided type
+  [[nodiscard]] bool matched(TokenType) const noexcept;
+
   /// Return true and advance the parser if the current token matches the provided lexeme.
   [[nodiscard]] bool match(const std::string&) noexcept;
 
@@ -103,7 +110,8 @@ private:
   /// Advance the parser until the next synchronization point.
   void synchronize() noexcept;
 
-  void error(const std::string&, Span) noexcept;
+  SynchronizationPoint error(const std::string&, Span) noexcept;
+  SynchronizationPoint unterminated_statement_error(Span) noexcept;
   void hint(const std::string&) noexcept;
 
   std::vector<Token> m_tokens;

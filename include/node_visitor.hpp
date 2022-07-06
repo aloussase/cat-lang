@@ -20,6 +20,7 @@ public:
   virtual std::any VisitStmt(cat::ast::Stmt&) = 0;
   virtual std::any VisitLetStmt(cat::ast::LetStmt&) = 0;
   virtual std::any VisitIfStmt(cat::ast::IfStmt&) = 0;
+  virtual std::any VisitPrintStmt(cat::ast::PrintStmt&) = 0;
   virtual std::any VisitNumber(cat::ast::Number&) = 0;
   virtual std::any VisitIdentifier(cat::ast::Identifier&) = 0;
   virtual std::any VisitAddExpr(cat::ast::AddExpr&) = 0;

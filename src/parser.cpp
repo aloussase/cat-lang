@@ -31,6 +31,23 @@ Parser::is_at_end() const noexcept
 }
 
 bool
+Parser::match(TokenType type) noexcept
+{
+  if (peek().has_value() && peek()->type() == type)
+    {
+      advance();
+      return true;
+    }
+  return false;
+}
+
+bool
+Parser::matched(TokenType type) const noexcept
+{
+  return previous().type() == type;
+}
+
+bool
 Parser::match(const std::string& lexeme) noexcept
 {
   if (peek().has_value() && peek()->lexeme() == lexeme)
@@ -61,10 +78,19 @@ Parser::previous() const noexcept
   return m_tokens[m_current - 1];
 }
 
-void
+Parser::SynchronizationPoint
 Parser::error(const std::string& msg, Span span) noexcept
 {
   m_diagnostics.push_back({ msg, span });
+  return SynchronizationPoint{};
+}
+
+Parser::SynchronizationPoint
+Parser::unterminated_statement_error(Span span) noexcept
+{
+  auto sync{ error("Unterminated statement", span) };
+  hint("Statements must end with a '.'");
+  return sync;
 }
 
 void
@@ -81,27 +107,26 @@ Parser::consume(TokenType type, bool synchronize)
   if (!token.has_value())
     {
       error("Unexpected end of file", current_span());
-      if (synchronize)
-        throw SynchronizationPoint{};
-      else
-        return;
+      goto exit;
     }
-
-  assert(token.has_value());
 
   if (token->type() == type)
     return;
+
+  if (token->type() == TokenType::DOT)
+    {
+      unterminated_statement_error(token->span());
+      goto exit;
+    }
 
   if (token->type() == TokenType::END)
     error("Unexpected end of file", token->span());
   else
     error("Unexpected token '" + token->lexeme() + "'", token->span());
 
-  if (type == TokenType::DOT)
-    hint("Statements must end with a '.'");
-  else
-    hint("A(n) " + token_type_as_str(type) + " was expected");
+  hint("A " + token_type_as_str(type) + " was expected");
 
+exit:
   if (synchronize)
     throw SynchronizationPoint{};
 }
@@ -177,6 +202,11 @@ Parser::parse_stmt()
           advance();
           return parse_if_stmt();
         }
+      else if (token->lexeme() == "print")
+        {
+          advance();
+          return parse_print_stmt();
+        }
     }
 
   auto expr{ parse_expr() };
@@ -226,10 +256,7 @@ ast::IfStmt*
 Parser::parse_if_stmt()
 {
   if (is_at_end())
-    {
-      error("Expected condition after if", current_span());
-      throw SynchronizationPoint{};
-    }
+    throw error("Expected condition after if", current_span());
 
   auto condition{ parse_expr() };
 
@@ -280,6 +307,20 @@ Parser::parse_if_stmt()
   return new IfStmt{ condition, ifStmts, elseStmts };
 }
 
+ast::PrintStmt*
+Parser::parse_print_stmt()
+{
+  std::vector<Expr*> exprs{};
+
+  while (!is_at_end() && !match(TokenType::DOT))
+    exprs.push_back(parse_expr());
+
+  if (!matched(TokenType::DOT))
+    throw unterminated_statement_error(current_span());
+
+  return new PrintStmt{ std::move(exprs) };
+}
+
 Expr*
 Parser::parse_expr(int precedence)
 {
@@ -323,8 +364,22 @@ parse_integer([[maybe_unused]] Parser& parser, Token token)
     case TokenType::NUMBER:
       return new Number(token, std::stoi(token.lexeme()));
     case TokenType::CHAR:
-      // Take the second character, the first is '#'
-      return new Number(token, *(token.lexeme().data() + 1));
+      {
+        // Take the second character, the first is '#'
+        auto lexeme = token.lexeme();
+        auto first_char = lexeme.data() + 1;
+
+        if (*first_char == '\\')
+          {
+            switch (*(first_char + 1))
+              {
+              case 'n':
+                return new Number(token, '\n');
+              }
+          }
+
+        return new Number(token, *first_char);
+      }
     default:
       assert(false && "Unhandled case in parse_integer");
     }
