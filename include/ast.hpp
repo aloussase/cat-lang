@@ -4,7 +4,7 @@
 #include <cassert>
 #include <vector>
 
-#include "ExprVisitor.hpp"
+#include "node_visitor.hpp"
 #include "Lexer.hpp"
 
 namespace cat

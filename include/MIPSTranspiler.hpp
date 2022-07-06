@@ -8,7 +8,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "ExprVisitor.hpp"
+#include "node_visitor.hpp"
 #include "diagnostic.hpp"
 
 namespace cat

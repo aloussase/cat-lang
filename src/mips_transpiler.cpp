@@ -3,7 +3,7 @@
 #include <iostream>
 #endif
 
-#include "ExprVisitor.hpp"
+#include "node_visitor.hpp"
 #include "Instruction.hpp"
 #include "MIPSTranspiler.hpp"
 #include "ast.hpp"
