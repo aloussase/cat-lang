@@ -4,7 +4,7 @@
 
  const showClipboardCopiedNotification = ref(false)
  const loading = ref(false)
- const transpilationInput = ref("1 + 2.");
+ const transpilationInput = ref("print #H#e#l#l#o# #W#o#r#l#d#!#\n.");
  const transpilationOutput = ref("");
  const executionOutput = ref("");
 
