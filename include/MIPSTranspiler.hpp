@@ -121,9 +121,9 @@ public:
         return "$t9";
       case name::SP:
         return "$sp";
+      default:
+        assert(false && "unhandled register to std::string conversion");
       }
-
-    return "unhandled register to std::string conversion";
   }
 
 private:

@@ -39,6 +39,7 @@ public:
     // These need to be treated specially
     m_precedence[TokenType::NUMBER] = 0;
     m_precedence[TokenType::IDENTIFIER] = 0;
+    m_precedence[TokenType::CHAR] = 0;
 
     m_precedence[TokenType::WALRUS] = 1;
     m_precedence[TokenType::PLUS] = 2;
@@ -48,6 +49,7 @@ public:
 
     // Register prefix parselets
     m_prefix_parselets[TokenType::NUMBER] = parse_integer;
+    m_prefix_parselets[TokenType::CHAR] = parse_integer;
     m_prefix_parselets[TokenType::IDENTIFIER] = parse_identifier;
     m_prefix_parselets[TokenType::LPAREN] = parse_grouping_expression;
 

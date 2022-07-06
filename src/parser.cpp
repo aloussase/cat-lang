@@ -316,13 +316,22 @@ Parser::parse_expr(int precedence)
 }
 
 Expr*
-parse_integer(Parser& parser, Token token)
+parse_integer([[maybe_unused]] Parser& parser, Token token)
 {
-  return new Number(token, std::stoi(token.lexeme()));
+  switch (token.type())
+    {
+    case TokenType::NUMBER:
+      return new Number(token, std::stoi(token.lexeme()));
+    case TokenType::CHAR:
+      // Take the second character, the first is '#'
+      return new Number(token, *(token.lexeme().data() + 1));
+    default:
+      assert(false && "Unhandled case in parse_integer");
+    }
 }
 
 Expr*
-parse_identifier(Parser& parser, Token token)
+parse_identifier([[maybe_unused]] Parser& parser, Token token)
 {
   return new Identifier{ token };
 }
@@ -367,7 +376,7 @@ parse_binary_operator(Parser& parser, Token token, Expr* lhs)
 }
 
 Expr*
-parse_grouping_expression(Parser& parser, Token token)
+parse_grouping_expression(Parser& parser, [[maybe_unused]] Token token)
 {
   auto expr{ parser.parse_expr(0) };
   parser.consume(TokenType::RPAREN);
