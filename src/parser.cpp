@@ -243,9 +243,9 @@ Parser::parse_let_stmt()
 
   if (!value)
     {
-      error("Expected value at right hand of let statement", identifier->token().span());
+      auto sync{ error("Expected value at right hand of let statement", identifier->token().span()) };
       delete identifier;
-      throw SynchronizationPoint{};
+      throw sync;
     }
 
   consume(TokenType::DOT);
@@ -263,9 +263,9 @@ Parser::parse_if_stmt()
   // Consume the 'then' keyword
   if (!match("then"))
     {
-      error("Expected 'then' after if statement condition", current_span());
+      auto sync{ error("Expected 'then' after if statement condition", current_span()) };
       hint("Insert 'then' to start the statement body");
-      throw SynchronizationPoint{};
+      throw sync;
     }
 
   std::vector<Stmt*> ifStmts{};
@@ -280,18 +280,18 @@ Parser::parse_if_stmt()
 
   if (is_at_end())
     {
-      error("Expected 'end' after if statement body", current_span());
+      auto sync{ error("Expected 'end' after if statement body", current_span()) };
       hint("Add 'end' to the end of the if statement");
-      throw SynchronizationPoint{};
+      throw sync;
     }
 
   // Parse the false branch, since we did not see and 'end' above
 
   if (!matched("else"))
     {
-      error("Expected else block after if", current_span());
+      auto sync{ error("Expected else block after if", current_span()) };
       hint("Add 'else' to begin an else block");
-      throw SynchronizationPoint{};
+      throw sync;
     }
 
   while (!is_at_end() && !match("end"))
@@ -299,9 +299,9 @@ Parser::parse_if_stmt()
 
   if (!matched("end"))
     {
-      error("Unterminated if statement", current_span());
+      auto sync{ error("Unterminated if statement", current_span()) };
       hint("Add 'end' to the end of the if statement");
-      throw SynchronizationPoint{};
+      throw sync;
     }
 
   return new IfStmt{ condition, ifStmts, elseStmts };
