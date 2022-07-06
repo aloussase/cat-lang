@@ -47,14 +47,6 @@ Parser::matched(const std::string& lexeme) const noexcept
   return previous().lexeme() == lexeme;
 }
 
-int
-Parser::current_line() const noexcept
-{
-  if (is_at_end())
-    return m_tokens[m_current - 1].line();
-  return peek()->line();
-}
-
 Span
 Parser::current_span() const noexcept
 {
@@ -70,9 +62,9 @@ Parser::previous() const noexcept
 }
 
 void
-Parser::error(int line, const std::string& msg, Span span) noexcept
+Parser::error(const std::string& msg, Span span) noexcept
 {
-  m_diagnostics.push_back({ line, msg, span });
+  m_diagnostics.push_back({ msg, span });
 }
 
 void
@@ -82,13 +74,13 @@ Parser::hint(const std::string& msg) noexcept
 }
 
 void
-Parser::consume(int line, TokenType type, bool synchronize)
+Parser::consume(TokenType type, bool synchronize)
 {
   auto token{ advance() };
 
   if (!token.has_value())
     {
-      error(line, "Unexpected end of file", current_span());
+      error("Unexpected end of file", current_span());
       if (synchronize)
         throw SynchronizationPoint{};
       else
@@ -101,9 +93,9 @@ Parser::consume(int line, TokenType type, bool synchronize)
     return;
 
   if (token->type() == TokenType::END)
-    error(token->line(), "Unexpected end of file", token->span());
+    error("Unexpected end of file", token->span());
   else
-    error(token->line(), "Unexpected token '" + token->lexeme() + "'", token->span());
+    error("Unexpected token '" + token->lexeme() + "'", token->span());
 
   if (type == TokenType::DOT)
     hint("Statements must end with a '.'");
@@ -162,7 +154,7 @@ Parser::Parse()
       token = peek();
     }
 
-  consume(token->line(), TokenType::END, false);
+  consume(TokenType::END, false);
   return program;
 };
 
@@ -188,7 +180,7 @@ Parser::parse_stmt()
     }
 
   auto expr{ parse_expr() };
-  consume(token->line(), TokenType::DOT);
+  consume(TokenType::DOT);
   return expr;
 }
 
@@ -201,13 +193,10 @@ Parser::parse_let_stmt()
     {
       // Do not parse the walrus during variable declaration.
       identifier = parse_expr(m_precedence[TokenType::WALRUS] + 1);
-      consume(identifier->token().line(), TokenType::WALRUS);
+      consume(TokenType::WALRUS);
     }
   catch (const SynchronizationPoint& ex)
     {
-#ifdef DEBUG
-      std::cout << "parse_let_stmt emitting hint about ':=' operator\n";
-#endif
       hint("Maybe you meant to use the assignment operator ':='?");
       delete identifier;
       throw ex;
@@ -215,21 +204,21 @@ Parser::parse_let_stmt()
 
   if (identifier->token().type() != TokenType::IDENTIFIER)
     {
-      error(identifier->token().line(), "Expected identifier after let", identifier->token().span());
+      error("Expected identifier after let", identifier->token().span());
       delete identifier;
       throw SynchronizationPoint{};
     }
 
   auto value{ parse_expr() };
+
   if (!value)
     {
-      error(identifier->token().line(), "Expected value at right hand of let statement",
-            identifier->token().span());
+      error("Expected value at right hand of let statement", identifier->token().span());
       delete identifier;
       throw SynchronizationPoint{};
     }
 
-  consume(value->token().line(), TokenType::DOT);
+  consume(TokenType::DOT);
   return new LetStmt{ static_cast<Identifier*>(identifier), value };
 }
 
@@ -238,18 +227,16 @@ Parser::parse_if_stmt()
 {
   if (is_at_end())
     {
-      error(current_line(), "Expected condition after if", current_span());
+      error("Expected condition after if", current_span());
       throw SynchronizationPoint{};
     }
 
   auto condition{ parse_expr() };
 
-  // TODO: it might be better to generate tokens for keywords
-
   // Consume the 'then' keyword
   if (!match("then"))
     {
-      error(current_line(), "Expected 'then' after if statement condition", current_span());
+      error("Expected 'then' after if statement condition", current_span());
       hint("Insert 'then' to start the statement body");
       throw SynchronizationPoint{};
     }
@@ -266,7 +253,7 @@ Parser::parse_if_stmt()
 
   if (is_at_end())
     {
-      error(current_line(), "Expected 'end' after if statement body", current_span());
+      error("Expected 'end' after if statement body", current_span());
       hint("Add 'end' to the end of the if statement");
       throw SynchronizationPoint{};
     }
@@ -275,7 +262,7 @@ Parser::parse_if_stmt()
 
   if (!matched("else"))
     {
-      error(current_line(), "Expected else block after if", current_span());
+      error("Expected else block after if", current_span());
       hint("Add 'else' to begin an else block");
       throw SynchronizationPoint{};
     }
@@ -285,7 +272,7 @@ Parser::parse_if_stmt()
 
   if (!matched("end"))
     {
-      error(current_line(), "Unterminated if statement", current_span());
+      error("Unterminated if statement", current_span());
       hint("Add 'end' to the end of the if statement");
       throw SynchronizationPoint{};
     }
@@ -303,7 +290,7 @@ Parser::parse_expr(int precedence)
   auto prefix_parselet{ get_prefix_parselet(token->type()) };
   if (!prefix_parselet.has_value())
     {
-      error(token->line(), "Invalid start of prefix expression: '" + token->lexeme() + "'", token->span());
+      error("Invalid start of prefix expression: '" + token->lexeme() + "'", token->span());
       throw SynchronizationPoint{};
     }
 
@@ -318,7 +305,7 @@ Parser::parse_expr(int precedence)
 
       if (!infix_parselet.has_value())
         {
-          error(next->line(), "Invalid start of infix expression: '" + next->lexeme() + "'", next->span());
+          error("Invalid start of infix expression: '" + next->lexeme() + "'", next->span());
           throw SynchronizationPoint{};
         }
 
@@ -367,8 +354,7 @@ parse_binary_operator(Parser& parser, Token token, Expr* lhs)
       {
         if (lhs->token().type() != TokenType::IDENTIFIER)
           {
-            parser.error(lhs->token().line(), "Left side of assignment must be a variable.",
-                         lhs->token().span());
+            parser.error("Left side of assignment must be a variable.", lhs->token().span());
             throw Parser::SynchronizationPoint{};
           }
         auto rhs{ parser.parse_expr() };
@@ -384,7 +370,7 @@ Expr*
 parse_grouping_expression(Parser& parser, Token token)
 {
   auto expr{ parser.parse_expr(0) };
-  parser.consume(expr->token().line(), TokenType::RPAREN);
+  parser.consume(TokenType::RPAREN);
   return expr;
 }
 

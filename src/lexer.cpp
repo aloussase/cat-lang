@@ -56,22 +56,22 @@ Lexer::Lex()
       switch (c)
         {
         case '+':
-          m_tokens.emplace_back(m_line, TokenType::PLUS, "+", Span{ m_start, m_current });
+          m_tokens.emplace_back(TokenType::PLUS, "+", Span{ m_start, m_current });
           break;
         case '-':
-          m_tokens.emplace_back(m_line, TokenType::MINUS, "-", Span{ m_start, m_current });
+          m_tokens.emplace_back(TokenType::MINUS, "-", Span{ m_start, m_current });
           break;
         case '*':
-          m_tokens.emplace_back(m_line, TokenType::STAR, "*", Span{ m_start, m_current });
+          m_tokens.emplace_back(TokenType::STAR, "*", Span{ m_start, m_current });
           break;
         case '(':
-          m_tokens.emplace_back(m_line, TokenType::LPAREN, "(", Span{ m_start, m_current });
+          m_tokens.emplace_back(TokenType::LPAREN, "(", Span{ m_start, m_current });
           break;
         case ')':
-          m_tokens.emplace_back(m_line, TokenType::RPAREN, ")", Span{ m_start, m_current });
+          m_tokens.emplace_back(TokenType::RPAREN, ")", Span{ m_start, m_current });
           break;
         case '.':
-          m_tokens.emplace_back(m_line, TokenType::DOT, ".", Span{ m_start, m_current });
+          m_tokens.emplace_back(TokenType::DOT, ".", Span{ m_start, m_current });
           break;
         case '0':
         case '1':
@@ -88,33 +88,51 @@ Lexer::Lex()
         case ':':
           {
             if (c = peek(); c != '=')
-              m_diagnostics.emplace_back(m_line, "Unexpected token ':'", Span{ m_start, m_current });
+              m_diagnostics.emplace_back("Unexpected token ':'", Span{ m_start, m_current });
             else
               {
                 advance();
-                m_tokens.emplace_back(m_line, TokenType::WALRUS, ":=", Span{ m_start, m_current });
+                m_tokens.emplace_back(TokenType::WALRUS, ":=", Span{ m_start, m_current });
               }
             break;
           }
         case ' ':
         case '\t':
         case '\r':
-          break;
         case '\n':
-          m_line++;
           break;
+        case '#':
+          {
+            c = advance();
+            if (c == '\\')
+              {
+                switch (advance())
+                  {
+                  case '\n':
+                    m_tokens.emplace_back(TokenType::CHAR, std::string{ c }, Span{ m_start, m_current });
+                    break;
+                  default:
+                    m_diagnostics.emplace_back("Invalid escape sequence \\" + std::string{ c },
+                                               Span{ m_start, m_current });
+                  }
+              }
+            else
+              {
+                m_tokens.emplace_back(TokenType::CHAR, std::string{ c }, Span{ m_start, m_current });
+              }
+          }
         default:
           {
             if (is_identifier_character(c))
               m_tokens.push_back(identifier(c));
             else
-              m_diagnostics.emplace_back(m_line, "Invalid token '" + std::string{ c } + "'",
+              m_diagnostics.emplace_back("Invalid token '" + std::string{ c } + "'",
                                          Span{ m_start, m_current });
           }
         }
     }
 
-  m_tokens.push_back(Token{ m_line, TokenType::END, "EOF", Span{ m_start, m_current } });
+  m_tokens.push_back(Token{ TokenType::END, "EOF", Span{ m_start, m_current } });
   return m_tokens;
 }
 
@@ -159,7 +177,7 @@ Lexer::number(char c) noexcept
       result += c;
     }
 
-  return { m_line, TokenType::NUMBER, result, Span{ m_start, m_current } };
+  return { TokenType::NUMBER, result, Span{ m_start, m_current } };
 }
 
 Token
@@ -173,7 +191,7 @@ Lexer::identifier(char c) noexcept
       result += c;
     }
 
-  return { m_line, TokenType::IDENTIFIER, result, Span{ m_start, m_current } };
+  return { TokenType::IDENTIFIER, result, Span{ m_start, m_current } };
 }
 
 }

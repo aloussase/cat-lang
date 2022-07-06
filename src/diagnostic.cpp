@@ -62,7 +62,7 @@ Diagnostic::format_error(const std::string& repl_line) const noexcept
           auto column_index{ m_span.start - current_line_span->start };
 
           // Add filename:line:col
-          error += "  \033[34m-->\033[m " + m_file + ":" + std::to_string(m_line) + ":"
+          error += "  \033[34m-->\033[m " + m_file + ":" + std::to_string(line_index + 1) + ":"
                    + std::to_string(column_index + 1) + "\n\n";
 
           if (line_index < spans.size() && m_span.end > current_line_span->start)

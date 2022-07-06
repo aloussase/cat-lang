@@ -74,16 +74,26 @@ private:
   std::optional<PrefixParselet> get_prefix_parselet(TokenType) noexcept;
   std::optional<InfixParselet> get_infix_parselet(TokenType) noexcept;
 
+  /// Try to advance the parse and return the next token.
   std::optional<Token> advance() noexcept;
+
+  /// Return the next token, if any, without advancing the parser.
   [[nodiscard]] std::optional<Token> peek() const noexcept;
-  void consume(int, TokenType, bool synchronize = true);
-  bool is_at_end() const noexcept;
-  bool match(const std::string&) noexcept;
-  bool matched(const std::string&) const noexcept;
-  int current_line() const noexcept;
+
+  /// Consume the specified token type and synchronize the parser if we fail to do so.
+  void consume(TokenType, bool synchronize = true);
+
+  /// Return true if we have reached the end of the token stream.
+  [[nodiscard]] bool is_at_end() const noexcept;
+
+  /// Return true and advance the parser if the current token matches the provided lexeme.
+  [[nodiscard]] bool match(const std::string&) noexcept;
+
+  /// Return true if the previous token matches the provided lexeme.
+  [[nodiscard]] bool matched(const std::string&) const noexcept;
 
   /// Return a Span for the curren token.
-  Span current_span() const noexcept;
+  [[nodiscard]] Span current_span() const noexcept;
 
   // Return the previous token.
   Token previous() const noexcept;
@@ -91,7 +101,7 @@ private:
   /// Advance the parser until the next synchronization point.
   void synchronize() noexcept;
 
-  void error(int, const std::string&, Span) noexcept;
+  void error(const std::string&, Span) noexcept;
   void hint(const std::string&) noexcept;
 
   std::vector<Token> m_tokens;
