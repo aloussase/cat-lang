@@ -1,3 +1,4 @@
 [x] Fix let 'x := 12' not incrementing the stack pointer
 [x] Add copy to clipboard button
 [ ] Move register acquisition to scope: must free all acquired registers in a given scope
+[ ] Add optional register argument to Visitor routines

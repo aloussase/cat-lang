@@ -151,8 +151,8 @@ MIPSTranspiler::undeclared_variable_error(ast::Identifier& identifier)
 std::string
 MIPSTranspiler::Transpile()
 {
-  emit(".text");
-  emit(".globl main");
+  emit("        .text");
+  emit("        .globl main");
   emit("main:");
   enter_scope();
   if (m_program)
@@ -203,8 +203,8 @@ MIPSTranspiler::VisitIfStmt(ast::IfStmt& ifStmt)
   // Generate code for the condition
   auto rs{ AS_REGISTER(ifStmt.condition()->Accept(*this)) };
 
-  auto else_label{ generate_label("ELSE") };
-  auto exit_if_stmt_label{ generate_label("EXIT_IF") };
+  auto else_label{ generate_label() };
+  auto exit_if_stmt_label{ generate_label() };
 
   auto has_else_branch{ ifStmt.else_branch().size() > 0 };
 
@@ -222,7 +222,6 @@ MIPSTranspiler::VisitIfStmt(ast::IfStmt& ifStmt)
     emit("beq " + std::string(rs) + ", $zero, " + exit_if_stmt_label);
 
   // We don't need the condition register anymore.
-
   release_register(rs);
 
   for (const auto& stmt : ifStmt.if_branch())
@@ -251,21 +250,24 @@ MIPSTranspiler::VisitPrintStmt(ast::PrintStmt& stmt)
   register_t v0{ register_t::name::V0 };
   register_t a0{ register_t::name::A0 };
 
+  uint32_t last_syscall{ 0 };
+
   for (const auto& expr : stmt.exprs())
     {
-      switch (expr->token().type())
+      uint32_t syscall = expr->token().type() == TokenType::CHAR ? 11 : 1;
+
+      if (last_syscall != syscall)
         {
-        case TokenType::CHAR:
-          emit<Instruction::LI>(v0, 11);
-          emit<Instruction::LI>(a0, AS_NUMBER(expr)->value());
-          break;
-        case TokenType::NUMBER:
-          emit<Instruction::LI>(v0, 1);
-          emit<Instruction::LI>(a0, AS_NUMBER(expr)->value());
-          break;
-        default:
+          // Avoid loading the same immediate into $v0 every time.
+          emit<Instruction::LI>(v0, syscall);
+          last_syscall = syscall;
+        }
+
+      if (expr->token().type() == TokenType::CHAR || expr->token().type() == TokenType::NUMBER)
+        emit<Instruction::LI>(a0, AS_NUMBER(expr)->value());
+      else
+        {
           auto rs{ AS_REGISTER(expr->Accept(*this)) };
-          emit<Instruction::LI>(v0, 1);
           emit<Instruction::MOVE>(a0, rs);
           release_register(rs);
         }
