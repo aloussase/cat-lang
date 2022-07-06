@@ -1,8 +1,8 @@
 #pragma once
 
+#include <array>
 #include <string>
-#include <vector>
-
+#include <string_view>
 #include <vector>
 
 #include "diagnostic.hpp"
@@ -30,7 +30,8 @@ enum class TokenType
 class Token
 {
 public:
-  Token(TokenType type, const std::string& lexeme, Span span)
+  constexpr
+  Token(TokenType type, std::string_view lexeme, Span span)
       : m_type{ type }, m_lexeme{ lexeme }, m_span{ span }
   {
   }
@@ -38,10 +39,10 @@ public:
   [[nodiscard]] std::string
   lexeme() const noexcept
   {
-    return m_lexeme;
+    return std::string{ m_lexeme.data(), m_lexeme.size() };
   }
 
-  [[nodiscard]] TokenType
+  [[nodiscard]] constexpr TokenType
   type() const noexcept
   {
     return m_type;
@@ -49,7 +50,7 @@ public:
 
   [[nodiscard]] std::string type_as_str();
 
-  [[nodiscard]] Span
+  [[nodiscard]] constexpr Span
   span() const noexcept
   {
     return m_span;
@@ -57,8 +58,7 @@ public:
 
 private:
   TokenType m_type;
-  // TODO: replace this with a string_view or some other kind of span
-  std::string m_lexeme;
+  std::string_view m_lexeme;
   Span m_span;
 };
 
@@ -75,16 +75,13 @@ public:
   std::vector<Token> Lex();
 
 private:
-  Token number(char) noexcept;
-  Token identifier(char) noexcept;
-
   bool is_at_end() const noexcept;
   bool is_identifier_character(char) const noexcept;
 
   char advance() noexcept;
   char peek() noexcept;
 
-  std::string m_source;
+  const std::string& m_source;
   std::vector<Diagnostic>& m_diagnostics;
   std::vector<Token> m_tokens = {};
   int m_current = 0;

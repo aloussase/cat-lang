@@ -1,6 +1,13 @@
+#include <cassert>
 #include <iostream>
 
 #include "Lexer.hpp"
+
+#define CURRENT_CHAR (std::string_view{ &m_source[m_current], 1 })
+#define PREV_CHAR (std::string_view{ &m_source[m_current - 1], 1 })
+
+#define CURRENT_SPAN (Span{ m_start, m_current })
+#define TOKEN_LENGTH (m_current - m_start)
 
 namespace cat
 {
@@ -10,6 +17,12 @@ operator<<(std::ostream& os, Token token)
 {
   os << "Token{" << token.type_as_str() << "," << token.lexeme() << "}";
   return os;
+}
+
+bool
+is_digit(char c)
+{
+  return c >= '0' && c <= '9';
 }
 
 std::string
@@ -35,8 +48,12 @@ token_type_as_str(TokenType type)
       return "identifier";
     case TokenType::WALRUS:
       return ":=";
+    case TokenType::CHAR:
+      return "char";
     case TokenType::END:
       return "EOF";
+    default:
+      assert(false && "Unhandled token type");
     }
 }
 
@@ -52,26 +69,27 @@ Lexer::Lex()
   while (!is_at_end())
     {
       m_start = m_current;
-      char c{ advance() };
-      switch (c)
+      auto start{ &m_source[m_current] };
+
+      switch (char c{ advance() }; c)
         {
         case '+':
-          m_tokens.emplace_back(TokenType::PLUS, "+", Span{ m_start, m_current });
+          m_tokens.emplace_back(TokenType::PLUS, PREV_CHAR, CURRENT_SPAN);
           break;
         case '-':
-          m_tokens.emplace_back(TokenType::MINUS, "-", Span{ m_start, m_current });
+          m_tokens.emplace_back(TokenType::MINUS, PREV_CHAR, CURRENT_SPAN);
           break;
         case '*':
-          m_tokens.emplace_back(TokenType::STAR, "*", Span{ m_start, m_current });
+          m_tokens.emplace_back(TokenType::STAR, PREV_CHAR, CURRENT_SPAN);
           break;
         case '(':
-          m_tokens.emplace_back(TokenType::LPAREN, "(", Span{ m_start, m_current });
+          m_tokens.emplace_back(TokenType::LPAREN, PREV_CHAR, CURRENT_SPAN);
           break;
         case ')':
-          m_tokens.emplace_back(TokenType::RPAREN, ")", Span{ m_start, m_current });
+          m_tokens.emplace_back(TokenType::RPAREN, PREV_CHAR, CURRENT_SPAN);
           break;
         case '.':
-          m_tokens.emplace_back(TokenType::DOT, ".", Span{ m_start, m_current });
+          m_tokens.emplace_back(TokenType::DOT, PREV_CHAR, CURRENT_SPAN);
           break;
         case '0':
         case '1':
@@ -83,16 +101,23 @@ Lexer::Lex()
         case '7':
         case '8':
         case '9':
-          m_tokens.push_back(number(c));
+          {
+            while (!is_at_end() && is_digit(peek()))
+              advance();
+
+            std::string_view lexeme(start, TOKEN_LENGTH);
+            m_tokens.emplace_back(TokenType::NUMBER, lexeme, CURRENT_SPAN);
+          }
           break;
         case ':':
           {
             if (c = peek(); c != '=')
-              m_diagnostics.emplace_back("Unexpected token ':'", Span{ m_start, m_current });
+              m_diagnostics.emplace_back("Unexpected token ':'", CURRENT_SPAN);
             else
               {
+                std::string_view lexeme(start, TOKEN_LENGTH);
                 advance();
-                m_tokens.emplace_back(TokenType::WALRUS, ":=", Span{ m_start, m_current });
+                m_tokens.emplace_back(TokenType::WALRUS, lexeme, CURRENT_SPAN);
               }
             break;
           }
@@ -103,36 +128,45 @@ Lexer::Lex()
           break;
         case '#':
           {
-            c = advance();
-            if (c == '\\')
+            if (c = advance(); c == '\\')
               {
-                switch (advance())
+                switch (advance()) // Switch on escape character
                   {
-                  case '\n':
-                    m_tokens.emplace_back(TokenType::CHAR, std::string{ c }, Span{ m_start, m_current });
+                  case 'n':
+                    m_tokens.emplace_back(TokenType::CHAR, std::string_view(start, TOKEN_LENGTH),
+                                          CURRENT_SPAN);
                     break;
                   default:
-                    m_diagnostics.emplace_back("Invalid escape sequence \\" + std::string{ c },
-                                               Span{ m_start, m_current });
+                    m_diagnostics.emplace_back("Invalid escape sequence \\" + std::string{ c }, CURRENT_SPAN);
                   }
               }
             else
-              {
-                m_tokens.emplace_back(TokenType::CHAR, std::string{ c }, Span{ m_start, m_current });
-              }
+              m_tokens.emplace_back(TokenType::CHAR, std::string_view(start, TOKEN_LENGTH), CURRENT_SPAN);
+
+            break;
           }
         default:
           {
             if (is_identifier_character(c))
-              m_tokens.push_back(identifier(c));
+              {
+                while (!is_at_end() && is_identifier_character(peek()))
+                  advance();
+
+                std::string_view lexeme(start, TOKEN_LENGTH);
+                m_tokens.emplace_back(TokenType::IDENTIFIER, lexeme, CURRENT_SPAN);
+              }
             else
-              m_diagnostics.emplace_back("Invalid token '" + std::string{ c } + "'",
-                                         Span{ m_start, m_current });
+              m_diagnostics.emplace_back("Invalid token '" + std::string{ c } + "'", CURRENT_SPAN);
           }
         }
     }
 
-  m_tokens.push_back(Token{ TokenType::END, "EOF", Span{ m_start, m_current } });
+#ifdef DEBUG
+  for (const auto& token : m_tokens)
+    std::cout << token.lexeme() << "\n";
+#endif
+
+  m_tokens.push_back(Token{ TokenType::END, "EOF", CURRENT_SPAN });
   return m_tokens;
 }
 
@@ -154,44 +188,10 @@ Lexer::advance() noexcept
   return m_source[m_current++];
 }
 
-bool
-is_digit(char c)
-{
-  return c >= '0' && c <= '9';
-}
-
 char
 Lexer::peek() noexcept
 {
   return m_source[m_current];
-}
-
-Token
-Lexer::number(char c) noexcept
-{
-  std::string result{ c };
-
-  while (!is_at_end() && is_digit(peek()))
-    {
-      c = advance();
-      result += c;
-    }
-
-  return { TokenType::NUMBER, result, Span{ m_start, m_current } };
-}
-
-Token
-Lexer::identifier(char c) noexcept
-{
-  std::string result{ c };
-
-  while (!is_at_end() && is_identifier_character(peek()))
-    {
-      c = advance();
-      result += c;
-    }
-
-  return { TokenType::IDENTIFIER, result, Span{ m_start, m_current } };
 }
 
 }
