@@ -324,10 +324,7 @@ Parser::parse_expr(int precedence)
 
   auto prefix_parselet{ get_prefix_parselet(token->type()) };
   if (!prefix_parselet.has_value())
-    {
-      error("Invalid start of prefix expression: '" + token->lexeme() + "'", token->span());
-      throw SynchronizationPoint{};
-    }
+    throw error("Invalid start of prefix expression: '" + token->lexeme() + "'", token->span());
 
   auto lhs{ prefix_parselet.value()(*this, *token) };
 
@@ -339,10 +336,7 @@ Parser::parse_expr(int precedence)
       auto infix_parselet{ get_infix_parselet(next->type()) };
 
       if (!infix_parselet.has_value())
-        {
-          error("Invalid start of infix expression: '" + next->lexeme() + "'", next->span());
-          throw SynchronizationPoint{};
-        }
+        throw error("Invalid start of infix expression: '" + next->lexeme() + "'", next->span());
 
       lhs = infix_parselet.value()(*this, *next, lhs);
     }
@@ -411,10 +405,8 @@ parse_binary_operator(Parser& parser, Token token, Expr* lhs)
     case TokenType::WALRUS:
       {
         if (lhs->token().type() != TokenType::IDENTIFIER)
-          {
-            parser.error("Left side of assignment must be a variable.", lhs->token().span());
-            throw Parser::SynchronizationPoint{};
-          }
+          throw parser.error("Left side of assignment must be a variable.", lhs->token().span());
+
         auto rhs{ parser.parse_expr() };
         return new AssignExpr{ token, lhs, rhs };
       }
@@ -427,7 +419,7 @@ parse_binary_operator(Parser& parser, Token token, Expr* lhs)
 Expr*
 parse_grouping_expression(Parser& parser, [[maybe_unused]] Token token)
 {
-  auto expr{ parser.parse_expr(0) };
+  auto expr{ parser.parse_expr() };
   parser.consume(TokenType::RPAREN);
   return expr;
 }
