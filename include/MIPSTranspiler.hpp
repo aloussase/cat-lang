@@ -184,7 +184,7 @@ private:
   [[nodiscard]] register_t find_register() noexcept;
   void release_register(register_t reg);
 
-  [[noreturn]] void undeclared_variable_error(ast::Identifier&);
+  [[nodiscard]] RuntimeException undeclared_variable_error(ast::Identifier&);
 
   void emit(const std::string& s) noexcept;
   void emit(const Instruction& instruction) noexcept;

@@ -136,16 +136,14 @@ MIPSTranspiler::generate_label(const std::string& prefix)
  * Error routines
  */
 
-void
+MIPSTranspiler::RuntimeException
 MIPSTranspiler::undeclared_variable_error(ast::Identifier& identifier)
 {
-  // TODO: attach spans to expression to have access to them here
-  m_diagnostics.emplace_back("Unbound variable " + identifier.name(), Span{ 0, 0 });
-  std::string hint{ "Maybe you forgot to declare the variable?\n\n" };
-  hint += "\t let " + identifier.name() + " := ...";
-  m_diagnostics.push_back({ Diagnostic::Severity::HINT, hint, Span{ 0, 0 } });
-
-  throw RuntimeException{};
+  m_diagnostics.emplace_back("Unbound variable " + identifier.name(), identifier.token().span());
+  m_diagnostics.emplace_back(Diagnostic::Severity::HINT, "Maybe you forgot to declare the variable?\n\n"
+                                                         "\t let "
+                                                             + identifier.name() + " := ...");
+  return RuntimeException{};
 }
 
 std::string
@@ -295,10 +293,8 @@ MIPSTranspiler::VisitIdentifier(ast::Identifier& identifier)
       emit<Instruction::LW>(rs, offset, register_t{ register_t::name::SP });
       return rs;
     }
-  else
-    {
-      undeclared_variable_error(identifier);
-    }
+
+  throw undeclared_variable_error(identifier);
 }
 
 std::any
@@ -365,10 +361,8 @@ MIPSTranspiler::VisitAssignExpr(ast::AssignExpr& expr)
 
       return rs;
     }
-  else
-    {
-      undeclared_variable_error(*identifier);
-    }
+
+  throw undeclared_variable_error(*identifier);
 }
 
 }
