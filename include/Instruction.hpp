@@ -16,11 +16,15 @@ public:
   class MOVE;
   class ADD;
   class SUB;
+  class SUBU;
   class MULT;
   class MFLO;
   class ADDI;
   class LW;
   class SW;
+  class SLT;
+  class SLTU;
+  class XORI;
 };
 
 class Instruction::LI : public Instruction
@@ -73,8 +77,7 @@ private:
 class Instruction::ADD : public Instruction
 {
 public:
-  ADD(const std::string& rd, const std::string& rs, const std::string& rt)
-      : rd_{ rd }, rs_{ rs }, rt_{ rt }
+  ADD(const std::string& rd, const std::string& rs, const std::string& rt) : rd_{ rd }, rs_{ rs }, rt_{ rt }
   {
   }
 
@@ -93,8 +96,7 @@ private:
 class Instruction::SUB : public Instruction
 {
 public:
-  SUB(const std::string& rd, const std::string& rs, const std::string& rt)
-      : rd_{ rd }, rs_{ rs }, rt_{ rt }
+  SUB(const std::string& rd, const std::string& rs, const std::string& rt) : rd_{ rd }, rs_{ rs }, rt_{ rt }
   {
   }
 
@@ -102,6 +104,25 @@ public:
   to_s() const noexcept override
   {
     return "sub   " + rd_ + ", " + rs_ + ", " + rt_;
+  }
+
+private:
+  std::string rd_;
+  std::string rs_;
+  std::string rt_;
+};
+
+class Instruction::SUBU : public Instruction
+{
+public:
+  SUBU(const std::string& rd, const std::string& rs, const std::string& rt) : rd_{ rd }, rs_{ rs }, rt_{ rt }
+  {
+  }
+
+  [[nodiscard]] std::string
+  to_s() const noexcept override
+  {
+    return "subu   " + rd_ + ", " + rs_ + ", " + rt_;
   }
 
 private:
@@ -149,10 +170,7 @@ private:
 class Instruction::LW : public Instruction
 {
 public:
-  LW(const std::string& rs, int offset, const std::string& rd)
-      : rs_{ rs }, rd_{ rd }, offset_{ offset }
-  {
-  }
+  LW(const std::string& rs, int offset, const std::string& rd) : rs_{ rs }, rd_{ rd }, offset_{ offset } {}
 
   [[nodiscard]] std::string
   to_s() const noexcept override
@@ -169,10 +187,7 @@ private:
 class Instruction::SW : public Instruction
 {
 public:
-  SW(const std::string& rs, int offset, const std::string& rd)
-      : rs_{ rs }, rd_{ rd }, offset_{ offset }
-  {
-  }
+  SW(const std::string& rs, int offset, const std::string& rd) : rs_{ rs }, rd_{ rd }, offset_{ offset } {}
 
   [[nodiscard]] std::string
   to_s() const noexcept override
@@ -184,6 +199,65 @@ private:
   std::string rs_ = {};
   std::string rd_ = {};
   int offset_ = {};
+};
+
+class Instruction::SLT : public Instruction
+{
+public:
+  SLT(const std::string& rd, const std::string& rs, const std::string& rt)
+      : m_rd{ rd }, m_rs{ rs }, m_rt{ rt }
+  {
+  }
+
+  [[nodiscard]] std::string
+  to_s() const noexcept override
+  {
+    return "slt    " + m_rd + ", " + m_rs + ", " + m_rt;
+  }
+
+private:
+  std::string m_rd = {};
+  std::string m_rs = {};
+  std::string m_rt = {};
+};
+
+class Instruction::SLTU : public Instruction
+{
+public:
+  SLTU(const std::string& rd, const std::string& rs, const std::string& rt)
+      : m_rd{ rd }, m_rs{ rs }, m_rt{ rt }
+  {
+  }
+
+  [[nodiscard]] std::string
+  to_s() const noexcept override
+  {
+    return "sltu    " + m_rd + ", " + m_rs + ", " + m_rt;
+  }
+
+private:
+  std::string m_rd = {};
+  std::string m_rs = {};
+  std::string m_rt = {};
+};
+
+class Instruction::XORI : public Instruction
+{
+public:
+  XORI(const std::string& rt, const std::string& rs, uint32_t immediate):
+    m_rt{rt}, m_rs{rs}, m_immediate{immediate}
+  {}
+
+  [[nodiscard]] std::string
+  to_s() const noexcept override
+  {
+    return "xori    " + m_rt + ", " + m_rs + ", " + std::to_string(m_immediate);
+  }
+
+private:
+  std::string m_rt = {};
+  std::string m_rs = {};
+  uint32_t m_immediate = {};
 };
 
 }

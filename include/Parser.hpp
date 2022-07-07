@@ -40,11 +40,19 @@ public:
     m_precedence[TokenType::NUMBER] = 0;
     m_precedence[TokenType::IDENTIFIER] = 0;
     m_precedence[TokenType::CHAR] = 0;
-
+    // Assignment operator
     m_precedence[TokenType::WALRUS] = 1;
-    m_precedence[TokenType::PLUS] = 2;
-    m_precedence[TokenType::MINUS] = 2;
-    m_precedence[TokenType::STAR] = 3;
+    // Relational operators
+    m_precedence[TokenType::LT] = 2;
+    m_precedence[TokenType::LTE] = 2;
+    m_precedence[TokenType::EQ] = 2;
+    m_precedence[TokenType::GT] = 2;
+    m_precedence[TokenType::GTE] = 2;
+    // Arithmetic operators
+    m_precedence[TokenType::PLUS] = 3;
+    m_precedence[TokenType::MINUS] = 3;
+    m_precedence[TokenType::STAR] = 4;
+    // Grouping operator
     m_precedence[TokenType::LPAREN] = 8;
 
     // Register prefix parselets
@@ -58,6 +66,11 @@ public:
     m_infix_parselets[TokenType::MINUS] = parse_binary_operator;
     m_infix_parselets[TokenType::STAR] = parse_binary_operator;
     m_infix_parselets[TokenType::WALRUS] = parse_binary_operator;
+    m_infix_parselets[TokenType::LT] = parse_binary_operator;
+    m_infix_parselets[TokenType::LTE] = parse_binary_operator;
+    m_infix_parselets[TokenType::EQ] = parse_binary_operator;
+    m_infix_parselets[TokenType::GT] = parse_binary_operator;
+    m_infix_parselets[TokenType::GTE] = parse_binary_operator;
   }
 
   std::unique_ptr<ast::Node> Parse();

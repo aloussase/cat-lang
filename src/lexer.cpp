@@ -91,6 +91,31 @@ Lexer::Lex()
         case '.':
           m_tokens.emplace_back(TokenType::DOT, PREV_CHAR, CURRENT_SPAN);
           break;
+        case '=':
+          m_tokens.emplace_back(TokenType::EQ, PREV_CHAR, CURRENT_SPAN);
+          break;
+        case '>':
+          {
+            if (c = peek(); c == '=')
+              {
+                advance();
+                m_tokens.emplace_back(TokenType::GTE, PREV_CHAR, CURRENT_SPAN);
+              }
+            else
+              m_tokens.emplace_back(TokenType::GT, PREV_CHAR, CURRENT_SPAN);
+          }
+          break;
+        case '<':
+          {
+            if (c = peek(); c == '=')
+              {
+                advance();
+                m_tokens.emplace_back(TokenType::LTE, PREV_CHAR, CURRENT_SPAN);
+              }
+            else
+              m_tokens.emplace_back(TokenType::LT, PREV_CHAR, CURRENT_SPAN);
+          }
+          break;
         case '0':
         case '1':
         case '2':

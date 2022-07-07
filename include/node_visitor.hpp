@@ -16,6 +16,8 @@ class NodeVisitor
 public:
   virtual ~NodeVisitor() noexcept{};
 
+  // TODO: Statements don't return anything, maybe I should make a separate
+  // StmtVisitor.
   virtual std::any VisitProgram(cat::ast::Program&) = 0;
   virtual std::any VisitStmt(cat::ast::Stmt&) = 0;
   virtual std::any VisitLetStmt(cat::ast::LetStmt&) = 0;
@@ -27,6 +29,7 @@ public:
   virtual std::any VisitSubExpr(cat::ast::SubExpr&) = 0;
   virtual std::any VisitMultExpr(cat::ast::MultExpr&) = 0;
   virtual std::any VisitAssignExpr(cat::ast::AssignExpr&) = 0;
+  virtual std::any VisitComparisonExpr(cat::ast::ComparisonExpr&) = 0;
 };
 
 }

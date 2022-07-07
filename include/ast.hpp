@@ -216,7 +216,6 @@ class AddExpr final : public BinaryExpr
 {
 public:
   AddExpr(Token token, Expr* lhs, Expr* rhs) : BinaryExpr{ token, lhs, rhs } {}
-
   std::any Accept(NodeVisitor&) override;
 };
 
@@ -225,7 +224,6 @@ class SubExpr final : public BinaryExpr
 {
 public:
   SubExpr(Token token, Expr* lhs, Expr* rhs) : BinaryExpr{ token, lhs, rhs } {}
-
   std::any Accept(NodeVisitor&) override;
 };
 
@@ -234,7 +232,6 @@ class MultExpr final : public BinaryExpr
 {
 public:
   MultExpr(Token token, Expr* lhs, Expr* rhs) : BinaryExpr{ token, lhs, rhs } {}
-
   std::any Accept(NodeVisitor&) override;
 };
 
@@ -243,7 +240,13 @@ class AssignExpr final : public BinaryExpr
 {
 public:
   AssignExpr(Token token, Expr* lhs, Expr* rhs) : BinaryExpr{ token, lhs, rhs } {}
+  std::any Accept(NodeVisitor&) override;
+};
 
+class ComparisonExpr final : public BinaryExpr
+{
+public:
+  ComparisonExpr(Token token, Expr* lhs, Expr* rhs) : BinaryExpr{ token, lhs, rhs } {}
   std::any Accept(NodeVisitor&) override;
 };
 

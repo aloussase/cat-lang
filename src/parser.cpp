@@ -411,6 +411,15 @@ parse_binary_operator(Parser& parser, Token token, Expr* lhs)
         return new AssignExpr{ token, lhs, rhs };
       }
       break;
+    case TokenType::LT:
+    case TokenType::LTE:
+    case TokenType::EQ:
+    case TokenType::GT:
+    case TokenType::GTE:
+      {
+        auto rhs{ parser.parse_expr(parser.m_precedence[TokenType::EQ]) };
+        return new ComparisonExpr{ token, lhs, rhs };
+      }
     default:
       assert(false && "Unhandled token type in parse_binary_operator");
     }

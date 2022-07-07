@@ -18,6 +18,7 @@ class AddExpr;
 class SubExpr;
 class MultExpr;
 class AssignExpr;
+class ComparisonExpr;
 }
 
 }

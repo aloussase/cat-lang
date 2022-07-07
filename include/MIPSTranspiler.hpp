@@ -83,6 +83,8 @@ public:
   {
     switch (name_)
       {
+      case name::ZERO:
+        return "$zero";
       case name::T0:
         return "$t0";
       case name::T1:
@@ -177,6 +179,7 @@ public:
   std::any VisitSubExpr(ast::SubExpr&) override;
   std::any VisitMultExpr(ast::MultExpr&) override;
   std::any VisitAssignExpr(ast::AssignExpr&) override;
+  std::any VisitComparisonExpr(ast::ComparisonExpr&) override;
 
 private:
   friend class Scope;
@@ -202,13 +205,13 @@ private:
     return m_diagnostics;
   }
 
-  Stack&
+  [[nodiscard]] Stack&
   stack() noexcept
   {
     return m_stack;
   }
 
-  Scope&
+  [[nodiscard]] Scope&
   current_scope() const noexcept
   {
     return *m_scope;

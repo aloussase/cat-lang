@@ -22,6 +22,11 @@ enum class TokenType
   IDENTIFIER,
   WALRUS,
   CHAR,
+  LT,
+  LTE,
+  GT,
+  GTE,
+  EQ,
   END
 };
 

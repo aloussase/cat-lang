@@ -135,6 +135,12 @@ AssignExpr::Accept(NodeVisitor& visitor)
   return visitor.VisitAssignExpr(*this);
 }
 
+std::any
+ComparisonExpr::Accept(NodeVisitor& visitor)
+{
+  return visitor.VisitComparisonExpr(*this);
+}
+
 } // namespace ast
 
 }

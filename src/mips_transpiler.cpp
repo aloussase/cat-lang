@@ -365,4 +365,44 @@ MIPSTranspiler::VisitAssignExpr(ast::AssignExpr& expr)
   throw undeclared_variable_error(*identifier);
 }
 
+std::any
+MIPSTranspiler::VisitComparisonExpr(ast::ComparisonExpr& expr)
+{
+  auto rs{ AS_REGISTER(expr.lhs()->Accept(*this)) };
+  auto rt{ AS_REGISTER(expr.rhs()->Accept(*this)) };
+  auto rd{ find_register() };
+
+  // FIXME: Currently there is no way to check if the two operands are correct.
+
+  switch (expr.token().type())
+    {
+    case TokenType::LT:
+      // x < y
+      emit<Instruction::SLT>(rd, rs, rt);
+      break;
+    case TokenType::LTE:
+      assert(false && "Not implemented");
+      break;
+    case TokenType::EQ:
+      emit<Instruction::SUBU>(rd, rs, rt);
+      emit<Instruction::SLTU>(rd, register_t{register_t::name::ZERO}, rd);
+      emit<Instruction::XORI>(rd, rd, 1);
+      break;
+    case TokenType::GT:
+      // (x > y) = (y < x)
+      emit<Instruction::SLT>(rd, rt, rs);
+      break;
+    case TokenType::GTE:
+      assert(false && "Not implemented");
+      break;
+    default:
+      assert(false && "Unhandled comparison operator");
+    }
+
+  release_register(rs);
+  release_register(rt);
+
+  return rd;
+}
+
 }
