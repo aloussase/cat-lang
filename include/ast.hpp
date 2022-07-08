@@ -154,6 +154,19 @@ private:
   int value_ = 0;
 };
 
+class String final : public Expr
+{
+public:
+  String(Token token, const std::string& value) : Expr{ token }, m_value{ value } {}
+
+  [[nodiscard]] const std::string& value() const noexcept;
+
+  std::any Accept(NodeVisitor&) override;
+
+private:
+  std::string m_value = {};
+};
+
 class Identifier final : public Expr
 {
 public:

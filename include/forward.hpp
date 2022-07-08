@@ -12,6 +12,7 @@ class LetStmt;
 class IfStmt;
 class PrintStmt;
 class Number;
+class String;
 class Identifier;
 class Expr;
 class AddExpr;

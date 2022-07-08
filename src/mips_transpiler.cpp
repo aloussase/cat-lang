@@ -164,7 +164,14 @@ MIPSTranspiler::Transpile()
         }
     }
   leave_scope();
-  emit("jr    $ra");
+  emit("jr   $ra");
+
+  if (m_string_literals.size() > 0)
+    emit("        .data");
+
+  for (const auto& [label, literal] : m_string_literals)
+    emit(fmt::format("{}:     .asciiz {}", label, literal));
+
   return m_result;
 }
 
@@ -252,7 +259,9 @@ MIPSTranspiler::VisitPrintStmt(ast::PrintStmt& stmt)
 
   for (const auto& expr : stmt.exprs())
     {
-      uint32_t syscall = expr->token().type() == TokenType::CHAR ? 11 : 1;
+      uint32_t syscall = expr->token().type() == TokenType::CHAR     ? 11
+                         : expr->token().type() == TokenType::STRING ? 4
+                                                                     : 1;
 
       if (last_syscall != syscall)
         {
@@ -282,6 +291,18 @@ MIPSTranspiler::VisitNumber(ast::Number& expr)
   auto r{ find_register() };
   emit<Instruction::LI>(r, expr.value());
   return r;
+}
+
+std::any
+MIPSTranspiler::VisitString(ast::String& expr)
+{
+  auto label{ generate_label() };
+  auto rd{ find_register() };
+
+  m_string_literals.emplace(label, expr.value());
+  emit<Instruction::LA>(rd, label);
+
+  return rd;
 }
 
 std::any

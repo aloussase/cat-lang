@@ -174,6 +174,7 @@ public:
   std::any VisitIfStmt(ast::IfStmt&) override;
   std::any VisitPrintStmt(ast::PrintStmt&) override;
   std::any VisitNumber(ast::Number&) override;
+  std::any VisitString(ast::String&) override;
   std::any VisitIdentifier(ast::Identifier&) override;
   std::any VisitAddExpr(ast::AddExpr&) override;
   std::any VisitSubExpr(ast::SubExpr&) override;
@@ -230,6 +231,7 @@ private:
   Scope* m_scope = nullptr;
   Stack m_stack = { *this };
   int m_label_count = 0;
+  std::unordered_map<std::string, const std::string&> m_string_literals = {};
 };
 
 class Scope

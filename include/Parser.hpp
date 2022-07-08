@@ -17,6 +17,7 @@ namespace cat
 class Parser;
 
 ast::Expr* parse_integer(Parser&, Token);
+ast::Expr* parse_string(Parser&, Token);
 ast::Expr* parse_identifier(Parser&, Token);
 ast::Expr* parse_grouping_expression(Parser&, Token);
 ast::Expr* parse_binary_operator(Parser&, Token, ast::Expr*);
@@ -40,6 +41,7 @@ public:
     m_precedence[TokenType::NUMBER] = 0;
     m_precedence[TokenType::IDENTIFIER] = 0;
     m_precedence[TokenType::CHAR] = 0;
+    m_precedence[TokenType::STRING] = 0;
     // Assignment operator
     m_precedence[TokenType::WALRUS] = 1;
     // Relational operators
@@ -58,6 +60,7 @@ public:
     // Register prefix parselets
     m_prefix_parselets[TokenType::NUMBER] = parse_integer;
     m_prefix_parselets[TokenType::CHAR] = parse_integer;
+    m_prefix_parselets[TokenType::STRING] = parse_string;
     m_prefix_parselets[TokenType::IDENTIFIER] = parse_identifier;
     m_prefix_parselets[TokenType::LPAREN] = parse_grouping_expression;
 
@@ -76,6 +79,7 @@ public:
   std::unique_ptr<ast::Node> Parse();
 
   friend ast::Expr* parse_integer(Parser&, Token);
+  friend ast::Expr* parse_string(Parser&, Token);
   friend ast::Expr* parse_identifier(Parser&, Token);
   friend ast::Expr* parse_grouping_expression(Parser&, Token);
   friend ast::Expr* parse_binary_operator(Parser&, Token, ast::Expr*);

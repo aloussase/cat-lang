@@ -24,6 +24,7 @@ public:
   virtual std::any VisitIfStmt(cat::ast::IfStmt&) = 0;
   virtual std::any VisitPrintStmt(cat::ast::PrintStmt&) = 0;
   virtual std::any VisitNumber(cat::ast::Number&) = 0;
+  virtual std::any VisitString(cat::ast::String&) = 0;
   virtual std::any VisitIdentifier(cat::ast::Identifier&) = 0;
   virtual std::any VisitAddExpr(cat::ast::AddExpr&) = 0;
   virtual std::any VisitSubExpr(cat::ast::SubExpr&) = 0;

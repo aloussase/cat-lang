@@ -14,6 +14,7 @@ public:
   virtual std::string to_s() const noexcept = 0;
 
   class LI;
+  class LA;
   class MOVE;
   class ADD;
   class SUB;
@@ -42,6 +43,22 @@ public:
 private:
   std::string reg_;
   int value_;
+};
+
+class Instruction::LA final : public Instruction
+{
+public:
+  LA(const std::string& rd, const std::string& addr) : m_rd{ rd }, m_addr{ addr } {}
+
+  [[nodiscard]] std::string
+  to_s() const noexcept override
+  {
+    return fmt::format("{:5}{}, {}", "la", m_rd, m_addr);
+  }
+
+private:
+  std::string m_rd;
+  std::string m_addr;
 };
 
 class Instruction::MOVE : public Instruction

@@ -101,6 +101,19 @@ Number::value() const noexcept
   return value_;
 }
 
+// Number
+const std::string&
+String::value() const noexcept
+{
+  return m_value;
+}
+
+std::any
+String::Accept(NodeVisitor& visitor)
+{
+  return visitor.VisitString(*this);
+}
+
 // Identifier
 std::any
 Identifier::Accept(NodeVisitor& visitor)
@@ -142,5 +155,4 @@ ComparisonExpr::Accept(NodeVisitor& visitor)
 }
 
 } // namespace ast
-
 }

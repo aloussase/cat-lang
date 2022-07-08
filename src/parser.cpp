@@ -373,6 +373,12 @@ parse_integer([[maybe_unused]] Parser& parser, Token token)
     }
 }
 
+ast::Expr*
+parse_string([[maybe_unused]] Parser& parser, Token token)
+{
+  return new String{ token, token.lexeme() };
+}
+
 Expr*
 parse_identifier([[maybe_unused]] Parser& parser, Token token)
 {

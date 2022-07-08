@@ -13,6 +13,7 @@ namespace cat
 enum class TokenType
 {
   NUMBER,
+  STRING,
   PLUS,
   MINUS,
   STAR,

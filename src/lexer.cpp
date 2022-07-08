@@ -32,6 +32,8 @@ token_type_as_str(TokenType type)
     {
     case TokenType::NUMBER:
       return "number";
+    case TokenType::STRING:
+      return "string";
     case TokenType::DOT:
       return ".";
     case TokenType::LPAREN:
@@ -156,6 +158,15 @@ Lexer::Lex()
               }
             break;
           }
+        case '"':
+          {
+            while (!is_at_end() && peek() != '"')
+              advance();
+            advance();
+            std::string_view lexeme(start, TOKEN_LENGTH);
+            m_tokens.emplace_back(TokenType::STRING, lexeme, CURRENT_SPAN);
+          }
+          break;
         case ' ':
         case '\t':
         case '\r':
