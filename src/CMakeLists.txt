@@ -7,6 +7,8 @@ add_library(cat-lang
   cat.cpp
 )
 
+target_link_libraries(cat-lang PUBLIC fmt::fmt)
+
 target_compile_options(cat-lang PUBLIC "-Wall" "-Wextra")
 target_compile_definitions(cat-lang PUBLIC "$<$<CONFIG:DEBUG>:DEBUG>")
 

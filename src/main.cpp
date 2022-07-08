@@ -2,6 +2,8 @@
 #include <cstring>
 #include <iostream>
 
+#include <fmt/core.h>
+
 #include "cat.hpp"
 
 /// Run a repl.
@@ -17,13 +19,10 @@ repl()
 
   std::string result;
 
-  while (std::getline(std::cin, line))
+  while (std::getline(std::cin, line) && line != ".quit")
     {
-      if (line == ".quit")
-        break;
-
       cat::transpile(line, result);
-      std::cout << result << "\n> ";
+      fmt::print("{}\n> ", result);
       result.clear();
     }
 }

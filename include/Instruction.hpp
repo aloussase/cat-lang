@@ -1,5 +1,6 @@
 #pragma once
 
+#include <fmt/color.h>
 #include <string>
 
 namespace cat
@@ -35,7 +36,7 @@ public:
   [[nodiscard]] std::string
   to_s() const noexcept override
   {
-    return "li    " + reg_ + ", " + std::to_string(value_);
+    return fmt::format("{:5}{}, {}", "li", reg_, value_);
   }
 
 private:
@@ -51,7 +52,7 @@ public:
   [[nodiscard]] std::string
   to_s() const noexcept override
   {
-    return "move  " + r1_ + ", " + r2_;
+    return fmt::format("{:5}{}, {}", "move", r1_, r2_);
   }
 
 private:
@@ -67,7 +68,7 @@ public:
   [[nodiscard]] std::string
   to_s() const noexcept override
   {
-    return "mflo  " + r_;
+    return fmt::format("{:5}{}", "mflo", r_);
   }
 
 private:
@@ -84,7 +85,7 @@ public:
   [[nodiscard]] std::string
   to_s() const noexcept override
   {
-    return "add   " + rd_ + ", " + rs_ + ", " + rt_;
+    return fmt::format("{:5}{}, {}, {}", "add", rd_, rs_, rt_);
   }
 
 private:
@@ -103,7 +104,7 @@ public:
   [[nodiscard]] std::string
   to_s() const noexcept override
   {
-    return "sub   " + rd_ + ", " + rs_ + ", " + rt_;
+    return fmt::format("{:5}{}, {}, {}", "sub", rd_, rs_, rt_);
   }
 
 private:
@@ -122,7 +123,7 @@ public:
   [[nodiscard]] std::string
   to_s() const noexcept override
   {
-    return "subu   " + rd_ + ", " + rs_ + ", " + rt_;
+    return fmt::format("{:5}{}, {}, {}", "subu", rd_, rs_, rt_);
   }
 
 private:
@@ -139,7 +140,7 @@ public:
   [[nodiscard]] std::string
   to_s() const noexcept override
   {
-    return "mult  " + r1_ + ", " + r2_;
+    return fmt::format("{:5}{}, {}", "mult", r1_, r2_);
   }
 
 private:
@@ -158,7 +159,7 @@ public:
   [[nodiscard]] std::string
   to_s() const noexcept override
   {
-    return "addi  " + rd_ + ", " + rs_ + ", " + std::to_string(constant_);
+    return fmt::format("{:5}{}, {}, {}", "addi", rd_, rs_, constant_);
   }
 
 private:
@@ -170,34 +171,34 @@ private:
 class Instruction::LW : public Instruction
 {
 public:
-  LW(const std::string& rs, int offset, const std::string& rd) : rs_{ rs }, rd_{ rd }, offset_{ offset } {}
+  LW(const std::string& rt, int offset, const std::string& rs) : rs_{ rs }, rt_{ rt }, offset_{ offset } {}
 
   [[nodiscard]] std::string
   to_s() const noexcept override
   {
-    return "lw    " + rs_ + ", " + std::to_string(offset_) + "(" + rd_ + ")";
+    return fmt::format("{:5}{}, {}({})", "lw", rt_, offset_, rs_);
   }
 
 private:
   std::string rs_ = {};
-  std::string rd_ = {};
+  std::string rt_ = {};
   int offset_ = {};
 };
 
 class Instruction::SW : public Instruction
 {
 public:
-  SW(const std::string& rs, int offset, const std::string& rd) : rs_{ rs }, rd_{ rd }, offset_{ offset } {}
+  SW(const std::string& rt, int offset, const std::string& rs) : rs_{ rs }, rt_{ rt }, offset_{ offset } {}
 
   [[nodiscard]] std::string
   to_s() const noexcept override
   {
-    return "sw    " + rs_ + ", " + std::to_string(offset_) + "(" + rd_ + ")";
+    return fmt::format("{:5}{}, {}({})", "sw", rt_, offset_, rs_);
   }
 
 private:
   std::string rs_ = {};
-  std::string rd_ = {};
+  std::string rt_ = {};
   int offset_ = {};
 };
 
@@ -212,7 +213,7 @@ public:
   [[nodiscard]] std::string
   to_s() const noexcept override
   {
-    return "slt    " + m_rd + ", " + m_rs + ", " + m_rt;
+    return fmt::format("{:5}{}, {}, {}", "slt", m_rd, m_rs, m_rt);
   }
 
 private:
@@ -232,7 +233,7 @@ public:
   [[nodiscard]] std::string
   to_s() const noexcept override
   {
-    return "sltu    " + m_rd + ", " + m_rs + ", " + m_rt;
+    return fmt::format("{:5}{}, {}, {}", "sltu", m_rd, m_rs, m_rt);
   }
 
 private:
@@ -244,14 +245,15 @@ private:
 class Instruction::XORI : public Instruction
 {
 public:
-  XORI(const std::string& rt, const std::string& rs, uint32_t immediate):
-    m_rt{rt}, m_rs{rs}, m_immediate{immediate}
-  {}
+  XORI(const std::string& rt, const std::string& rs, uint32_t immediate)
+      : m_rt{ rt }, m_rs{ rs }, m_immediate{ immediate }
+  {
+  }
 
   [[nodiscard]] std::string
   to_s() const noexcept override
   {
-    return "xori    " + m_rt + ", " + m_rs + ", " + std::to_string(m_immediate);
+    return fmt::format("{:5}{}, {}, {}", "xori", m_rt, m_rs, m_immediate);
   }
 
 private:
