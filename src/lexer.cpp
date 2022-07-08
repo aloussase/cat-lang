@@ -48,6 +48,16 @@ token_type_as_str(TokenType type)
       return "identifier";
     case TokenType::WALRUS:
       return ":=";
+    case TokenType::LT:
+      return "<";
+    case TokenType::LTE:
+      return "<=";
+    case TokenType::EQ:
+      return "=";
+    case TokenType::GT:
+      return ">";
+    case TokenType::GTE:
+      return ">=";
     case TokenType::CHAR:
       return "char";
     case TokenType::END:

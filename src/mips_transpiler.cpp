@@ -381,11 +381,13 @@ MIPSTranspiler::VisitComparisonExpr(ast::ComparisonExpr& expr)
       emit<Instruction::SLT>(rd, rs, rt);
       break;
     case TokenType::LTE:
-      assert(false && "Not implemented");
+      // (x <= y) = !(y < x)
+      emit<Instruction::SLT>(rd, rt, rs);
+      emit<Instruction::XORI>(rd, rd, 1);
       break;
     case TokenType::EQ:
       emit<Instruction::SUBU>(rd, rs, rt);
-      emit<Instruction::SLTU>(rd, register_t{register_t::name::ZERO}, rd);
+      emit<Instruction::SLTU>(rd, register_t{ register_t::name::ZERO }, rd);
       emit<Instruction::XORI>(rd, rd, 1);
       break;
     case TokenType::GT:
@@ -393,7 +395,9 @@ MIPSTranspiler::VisitComparisonExpr(ast::ComparisonExpr& expr)
       emit<Instruction::SLT>(rd, rt, rs);
       break;
     case TokenType::GTE:
-      assert(false && "Not implemented");
+      // (x >= y) = !(x < y)
+      emit<Instruction::SLT>(rd, rs, rt);
+      emit<Instruction::XORI>(rd, rd, 1);
       break;
     default:
       assert(false && "Unhandled comparison operator");
