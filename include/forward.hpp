@@ -5,16 +5,18 @@ namespace cat
 
 namespace ast
 {
-class Node;
 class Program;
 class Stmt;
 class LetStmt;
 class IfStmt;
+class ForStmt;
 class PrintStmt;
+class ExprStmt;
+
+class Expr;
 class Number;
 class String;
 class Identifier;
-class Expr;
 class AddExpr;
 class SubExpr;
 class MultExpr;

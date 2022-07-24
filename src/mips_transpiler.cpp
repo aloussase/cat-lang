@@ -6,7 +6,6 @@
 #include "Instruction.hpp"
 #include "MIPSTranspiler.hpp"
 #include "ast.hpp"
-#include "node_visitor.hpp"
 
 #define AS_REGISTER(o) std::any_cast<register_t>(o)
 #define AS_NUMBER(o) static_cast<ast::Number*>(o)
@@ -175,7 +174,7 @@ MIPSTranspiler::Transpile()
   return m_result;
 }
 
-std::any
+void
 MIPSTranspiler::VisitProgram(ast::Program& program)
 {
   for (ast::Stmt* stmt : program.stmts())
@@ -183,26 +182,23 @@ MIPSTranspiler::VisitProgram(ast::Program& program)
       assert(stmt != nullptr);
       stmt->Accept(*this);
     }
-  return {};
 }
 
-std::any
-MIPSTranspiler::VisitStmt(ast::Stmt& stmt)
+void
+MIPSTranspiler::VisitExprStmt(ast::ExprStmt& exprStmt)
 {
-  stmt.Accept(*this);
-  return {};
+  exprStmt.expr()->Accept(*this);
 }
 
-std::any
+void
 MIPSTranspiler::VisitLetStmt(ast::LetStmt& letStmt)
 {
   auto rs{ AS_REGISTER(letStmt.value().Accept(*this)) };
   current_scope().declare_and_initialize(letStmt.identifier(), rs);
   release_register(rs);
-  return {};
 }
 
-std::any
+void
 MIPSTranspiler::VisitIfStmt(ast::IfStmt& ifStmt)
 {
   // Generate code for the condition
@@ -246,10 +242,14 @@ MIPSTranspiler::VisitIfStmt(ast::IfStmt& ifStmt)
   emit(exit_if_stmt_label + ":");
 
   leave_scope();
-  return {};
 }
 
-std::any
+void
+MIPSTranspiler::VisitForStmt(ast::ForStmt& stmt)
+{
+}
+
+void
 MIPSTranspiler::VisitPrintStmt(ast::PrintStmt& stmt)
 {
   register_t v0{ register_t::name::V0 };
@@ -281,8 +281,6 @@ MIPSTranspiler::VisitPrintStmt(ast::PrintStmt& stmt)
 
       emit("syscall");
     }
-
-  return {};
 }
 
 std::any

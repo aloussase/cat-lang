@@ -156,7 +156,7 @@ Parser::get_infix_parselet(TokenType type) noexcept
   return m_infix_parselets[type];
 }
 
-std::unique_ptr<Node>
+std::unique_ptr<Program>
 Parser::Parse()
 {
   std::unique_ptr<Program> program{ new Program };
@@ -211,7 +211,7 @@ Parser::parse_stmt()
 
   auto expr{ parse_expr() };
   consume(TokenType::DOT);
-  return expr;
+  return new ExprStmt{ expr };
 }
 
 LetStmt*

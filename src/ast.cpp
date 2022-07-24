@@ -7,10 +7,10 @@ namespace ast
 {
 
 // Program
-std::any
-Program::Accept(NodeVisitor& visitor)
+void
+Program::Accept(StmtVisitor& visitor)
 {
-  return visitor.VisitProgram(*this);
+  visitor.VisitProgram(*this);
 }
 
 void
@@ -24,13 +24,6 @@ std::vector<Stmt*>
 Program::stmts() const noexcept
 {
   return stmts_;
-}
-
-// Stmt
-std::any
-Stmt::Accept(NodeVisitor& visitor)
-{
-  return visitor.VisitStmt(*this);
 }
 
 // LetStmt
@@ -52,10 +45,10 @@ LetStmt::value() const noexcept
   return *value_;
 }
 
-std::any
-LetStmt::Accept(NodeVisitor& visitor)
+void
+LetStmt::Accept(StmtVisitor& visitor)
 {
-  return visitor.VisitLetStmt(*this);
+  visitor.VisitLetStmt(*this);
 }
 
 // IfStmt
@@ -69,10 +62,17 @@ IfStmt::~IfStmt()
     delete stmt;
 }
 
-std::any
-IfStmt::Accept(NodeVisitor& visitor)
+void
+IfStmt::Accept(StmtVisitor& visitor)
 {
-  return visitor.VisitIfStmt(*this);
+  visitor.VisitIfStmt(*this);
+}
+
+// ForStmt
+void
+ForStmt::Accept(StmtVisitor& visitor)
+{
+  visitor.VisitForStmt(*this);
 }
 
 // PrintStmt
@@ -82,15 +82,21 @@ PrintStmt::~PrintStmt()
     delete expr;
 }
 
-std::any
-PrintStmt::Accept(NodeVisitor& visitor)
+void
+PrintStmt::Accept(StmtVisitor& visitor)
 {
-  return visitor.VisitPrintStmt(*this);
+  visitor.VisitPrintStmt(*this);
+}
+
+void
+ExprStmt::Accept(StmtVisitor& visitor)
+{
+  visitor.VisitExprStmt(*this);
 }
 
 // Number
 std::any
-Number::Accept(NodeVisitor& visitor)
+Number::Accept(ExprVisitor& visitor)
 {
   return visitor.VisitNumber(*this);
 }
@@ -109,47 +115,47 @@ String::value() const noexcept
 }
 
 std::any
-String::Accept(NodeVisitor& visitor)
+String::Accept(ExprVisitor& visitor)
 {
   return visitor.VisitString(*this);
 }
 
 // Identifier
 std::any
-Identifier::Accept(NodeVisitor& visitor)
+Identifier::Accept(ExprVisitor& visitor)
 {
   return visitor.VisitIdentifier(*this);
 }
 
 // AddExpr
 std::any
-AddExpr::Accept(NodeVisitor& visitor)
+AddExpr::Accept(ExprVisitor& visitor)
 {
   return visitor.VisitAddExpr(*this);
 }
 
 // SubExpr
 std::any
-SubExpr::Accept(NodeVisitor& visitor)
+SubExpr::Accept(ExprVisitor& visitor)
 {
   return visitor.VisitSubExpr(*this);
 }
 
 // MultExpr
 std::any
-MultExpr::Accept(NodeVisitor& visitor)
+MultExpr::Accept(ExprVisitor& visitor)
 {
   return visitor.VisitMultExpr(*this);
 }
 
 std::any
-AssignExpr::Accept(NodeVisitor& visitor)
+AssignExpr::Accept(ExprVisitor& visitor)
 {
   return visitor.VisitAssignExpr(*this);
 }
 
 std::any
-ComparisonExpr::Accept(NodeVisitor& visitor)
+ComparisonExpr::Accept(ExprVisitor& visitor)
 {
   return visitor.VisitComparisonExpr(*this);
 }

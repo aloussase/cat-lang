@@ -11,18 +11,11 @@ namespace cat
  * This is an abstract base class that represents an expression
  * visitor that accumulates state while visiting expressions.
  */
-class NodeVisitor
+class ExprVisitor
 {
 public:
-  virtual ~NodeVisitor() noexcept{};
+  virtual ~ExprVisitor() noexcept{};
 
-  // TODO: Statements don't return anything, maybe I should make a separate
-  // StmtVisitor.
-  virtual std::any VisitProgram(cat::ast::Program&) = 0;
-  virtual std::any VisitStmt(cat::ast::Stmt&) = 0;
-  virtual std::any VisitLetStmt(cat::ast::LetStmt&) = 0;
-  virtual std::any VisitIfStmt(cat::ast::IfStmt&) = 0;
-  virtual std::any VisitPrintStmt(cat::ast::PrintStmt&) = 0;
   virtual std::any VisitNumber(cat::ast::Number&) = 0;
   virtual std::any VisitString(cat::ast::String&) = 0;
   virtual std::any VisitIdentifier(cat::ast::Identifier&) = 0;

@@ -9,7 +9,8 @@
 #include <vector>
 
 #include "diagnostic.hpp"
-#include "node_visitor.hpp"
+#include "expr_visitor.hpp"
+#include "stmt_visitor.hpp"
 
 namespace cat
 {
@@ -138,10 +139,10 @@ private:
 
 class Scope;
 
-class MIPSTranspiler final : public NodeVisitor
+class MIPSTranspiler final : public ExprVisitor, public StmtVisitor
 {
 public:
-  MIPSTranspiler(std::unique_ptr<ast::Node> program, std::vector<Diagnostic>& diagnostics)
+  MIPSTranspiler(std::unique_ptr<ast::Program> program, std::vector<Diagnostic>& diagnostics)
       : m_program{ program.release() }, m_diagnostics{ diagnostics }
   {
   }
@@ -168,11 +169,13 @@ public:
 
   std::string Transpile();
 
-  std::any VisitProgram(ast::Program&) override;
-  std::any VisitStmt(ast::Stmt&) override;
-  std::any VisitLetStmt(ast::LetStmt&) override;
-  std::any VisitIfStmt(ast::IfStmt&) override;
-  std::any VisitPrintStmt(ast::PrintStmt&) override;
+  void VisitProgram(ast::Program&) override;
+  void VisitLetStmt(ast::LetStmt&) override;
+  void VisitIfStmt(ast::IfStmt&) override;
+  void VisitForStmt(ast::ForStmt&) override;
+  void VisitPrintStmt(ast::PrintStmt&) override;
+  void VisitExprStmt(ast::ExprStmt&) override;
+
   std::any VisitNumber(ast::Number&) override;
   std::any VisitString(ast::String&) override;
   std::any VisitIdentifier(ast::Identifier&) override;
@@ -223,7 +226,7 @@ private:
 
   std::string generate_label(const std::string& prefix = "");
 
-  ast::Node* m_program;
+  ast::Program* m_program;
   std::vector<Diagnostic>& m_diagnostics;
 
   std::string m_result = {};

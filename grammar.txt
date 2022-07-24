@@ -5,6 +5,13 @@ stmts' ::= stmts | Є
 
 stmt ::= varDecl | exprStmt
 
+ifStmt ::= 'if' expr 'then' stmts 'end'
+        |  'if' expr 'then' stmts 'else' stmts 'end'
+
+forStmt ::= 'for' IDENTIFIER 'in' rangeLike '{' stmts '}'
+
+rangeLike ::= STRING
+
 varDecl ::= 'let' IDENTIFIER ':=' expr '.'
 
 exprStmt ::= expr '.'

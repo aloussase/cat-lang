@@ -76,7 +76,7 @@ public:
     m_infix_parselets[TokenType::GTE] = parse_binary_operator;
   }
 
-  std::unique_ptr<ast::Node> Parse();
+  std::unique_ptr<ast::Program> Parse();
 
   friend ast::Expr* parse_integer(Parser&, Token);
   friend ast::Expr* parse_string(Parser&, Token);
