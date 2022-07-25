@@ -88,6 +88,7 @@ private:
   [[nodiscard]] ast::Stmt* parse_stmt();
   [[nodiscard]] ast::LetStmt* parse_let_stmt();
   [[nodiscard]] ast::IfStmt* parse_if_stmt();
+  [[nodiscard]] ast::ForStmt* parse_for_stmt();
   [[nodiscard]] ast::PrintStmt* parse_print_stmt();
   [[nodiscard]] ast::Expr* parse_expr(int precedence = 0);
 

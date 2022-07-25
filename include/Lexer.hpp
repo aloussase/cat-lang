@@ -19,6 +19,8 @@ enum class TokenType
   STAR,
   LPAREN,
   RPAREN,
+  LBRACE,
+  RBRACE,
   DOT,
   IDENTIFIER,
   WALRUS,

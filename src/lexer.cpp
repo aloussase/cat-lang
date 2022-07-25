@@ -38,6 +38,10 @@ token_type_as_str(TokenType type)
       return ".";
     case TokenType::LPAREN:
       return "(";
+    case TokenType::LBRACE:
+      return "{";
+    case TokenType::RBRACE:
+      return "}";
     case TokenType::MINUS:
       return "-";
     case TokenType::PLUS:
@@ -99,6 +103,12 @@ Lexer::Lex()
           break;
         case ')':
           m_tokens.emplace_back(TokenType::RPAREN, PREV_CHAR, CURRENT_SPAN);
+          break;
+        case '{':
+          m_tokens.emplace_back(TokenType::LBRACE, PREV_CHAR, CURRENT_SPAN);
+          break;
+        case '}':
+          m_tokens.emplace_back(TokenType::RBRACE, PREV_CHAR, CURRENT_SPAN);
           break;
         case '.':
           m_tokens.emplace_back(TokenType::DOT, PREV_CHAR, CURRENT_SPAN);

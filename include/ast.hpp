@@ -99,15 +99,16 @@ private:
 class ForStmt final : public Stmt
 {
 public:
-  ForStmt(const std::string& var, std::unique_ptr<Expr> range, std::vector<std::unique_ptr<Stmt> >&& stmts)
-      : m_var{ var }, m_range{ std::move(range) }, m_stmts{ std::move(stmts) }
+  ForStmt(std::unique_ptr<Expr> ident, std::unique_ptr<Expr> range,
+          std::vector<std::unique_ptr<Stmt> >&& stmts)
+      : m_loop_var{ std::move(ident) }, m_range{ std::move(range) }, m_stmts{ std::move(stmts) }
   {
   }
 
-  [[nodiscard]] std::string
-  var() const noexcept
+  [[nodiscard]] const std::unique_ptr<Expr>&
+  loop_var() const noexcept
   {
-    return m_var;
+    return m_loop_var;
   }
 
   [[nodiscard]] const std::unique_ptr<Expr>&
@@ -125,7 +126,7 @@ public:
   void Accept(StmtVisitor&) override;
 
 private:
-  std::string m_var;
+  std::unique_ptr<Expr> m_loop_var;
   std::unique_ptr<Expr> m_range;
   std::vector<std::unique_ptr<Stmt> > m_stmts;
 };

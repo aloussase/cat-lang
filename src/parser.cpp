@@ -207,11 +207,52 @@ Parser::parse_stmt()
           advance();
           return parse_print_stmt();
         }
+      else if (token->lexeme() == "for")
+        {
+          advance();
+          return parse_for_stmt();
+        }
     }
 
+  // An expression statement is an expression followed by a dot.
   auto expr{ parse_expr() };
   consume(TokenType::DOT);
   return new ExprStmt{ expr };
+}
+
+ForStmt*
+Parser::parse_for_stmt()
+{
+  auto* identifier = parse_expr();
+  if (identifier->token().type() != TokenType::IDENTIFIER)
+    {
+      error("Expected identifier after for", identifier->token().span());
+      delete identifier;
+      throw SynchronizationPoint{};
+    }
+
+  if (!match("in"))
+    throw error("Expected 'in' after identifier in for statement", current_span());
+
+  Expr* range;
+  try
+    {
+      range = parse_expr();
+    }
+  catch (SynchronizationPoint& ex)
+    {
+      hint("Maybe you forgot to put an expression before the '{'?");
+      throw ex;
+    }
+
+  consume(TokenType::LBRACE);
+
+  std::vector<std::unique_ptr<Stmt> > stmts = {};
+  while (!is_at_end() && peek()->type() != TokenType::RBRACE)
+    stmts.push_back(std::unique_ptr<Stmt>(parse_stmt()));
+
+  consume(TokenType::RBRACE);
+  return new ForStmt{ std::unique_ptr<Expr>{ identifier }, std::unique_ptr<Expr>{ range }, std::move(stmts) };
 }
 
 LetStmt*
